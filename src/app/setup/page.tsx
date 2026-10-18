@@ -21,7 +21,7 @@ export default function SetupPage() {
 
 async function SetupContent() {
   await connection();
-  if (!(await store.isEmpty())) notFound();
+  if (!process.env.CERTA_SETUP_TOKEN || !(await store.isEmpty())) notFound();
   return (
     <>
       <h1 className={s.title}>Первичная настройка</h1>

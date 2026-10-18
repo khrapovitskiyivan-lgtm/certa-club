@@ -19,6 +19,12 @@ export function SetupForm() {
   return (
     <form action={action} className={s.form} noValidate>
       <div className={s.field}>
+        <label htmlFor="token" className={s.label}>
+          Ключ настройки (CERTA_SETUP_TOKEN)
+        </label>
+        <input id="token" name="token" type="password" className={s.input} autoComplete="off" />
+      </div>
+      <div className={s.field}>
         <label htmlFor="name" className={s.label}>
           Имя первого члена совета
         </label>
