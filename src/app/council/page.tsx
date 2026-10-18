@@ -8,6 +8,7 @@ import { store, type Member } from "@/server/store";
 import { logout } from "../auth-actions";
 import { approveMember, deleteUnfinishedAction, revokeInviteAction } from "./actions";
 import { InviteForm } from "./invite-form";
+import { RoleSelect } from "./role-select";
 import s from "../invite/invite.module.css";
 import c from "./council.module.css";
 
@@ -133,7 +134,13 @@ async function CouncilContent() {
               <tr key={m.id}>
                 <td>{m.pseudonym}</td>
                 <td>{m.fullName}</td>
-                <td>{m.role === "council" ? "совет" : "участник"}</td>
+                <td>
+                  <RoleSelect
+                    id={m.id}
+                    role={m.role ?? "member"}
+                    locked={m.role === "council" && active.filter((x) => x.role === "council").length <= 1}
+                  />
+                </td>
                 <td>с {fmt(m.activatedAt ?? m.createdAt)}</td>
               </tr>
             ))}

@@ -56,3 +56,26 @@ export async function deleteUnfinishedAction(formData: FormData): Promise<void> 
   }
   revalidatePath("/council");
 }
+
+const ROLE_NAMES = { member: "участник", expert: "эксперт", council: "экспертный совет" } as const;
+type Role = keyof typeof ROLE_NAMES;
+
+// Смена роли подтверждённого участника. Последнего члена совета снять нельзя.
+export async function setRoleAction(formData: FormData): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const id = String(formData.get("id") ?? "");
+  const role = String(formData.get("role") ?? "") as Role;
+  if (!(role in ROLE_NAMES)) return;
+  const m = await store.getMember(id);
+  if (!m || m.status !== "active") return;
+  const current = (m.role ?? "member") as Role;
+  if (current === role) return;
+  if (current === "council") {
+    const councils = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
+    if (councils.length <= 1) return;
+  }
+  await store.updateMember(id, { role });
+  await logEvent("role_changed", `Роль ${m.pseudonym}: ${ROLE_NAMES[current]} → ${ROLE_NAMES[role]} (${me.pseudonym})`, id);
+  revalidatePath("/council");
+}

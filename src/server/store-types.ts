@@ -18,7 +18,8 @@ export type Member = {
   status: "awaiting_kyc" | "kyc_submitted" | "active";
   verification?: Verification;
   // Роль в клубе: совет подтверждает участников и выдаёт приглашения.
-  role?: "member" | "council";
+  // expert: даёт оценку и заключения по экспертизе (модуль экспертизы впереди).
+  role?: "member" | "expert" | "council";
   activatedAt?: string;
   createdAt: string;
 };
