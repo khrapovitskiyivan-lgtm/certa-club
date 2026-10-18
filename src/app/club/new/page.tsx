@@ -30,7 +30,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
     <>
       <ClubHeader me={me} />
       <div className={s.narrow} style={{ margin: 0 }}>
-        <h1 className={s.title}>{kind === "offer" ? "Предложить вещь" : "Ищу вещь"}</h1>
+        <h1 className={s.title}>{kind === "offer" ? "Предложить" : "Ищу"}</h1>
         <p className={s.lead}>
           {kind === "offer"
             ? "Участники увидят вещь под вашим псевдонимом. Имя раскрывается только с вашего согласия, на этапе сделки."

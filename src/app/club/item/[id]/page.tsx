@@ -44,6 +44,11 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           {isOffer ? "Предложение" : "Ищут в клубе"} · {CATEGORIES[l.category]}
         </span>
         <h1 className={c.itemTitle}>{l.title}</h1>
+        {l.photos?.map((src) => (
+          // eslint-disable-next-line @next/next/no-img-element -- статичные SVG, оптимизация не нужна
+          <img key={src} src={src} alt={l.title} className={c.photoLarge} />
+        ))}
+        {l.demo && <span className={c.badge}>Тестовый лот</span>}
         {l.quiet && <span className={c.badge}>Тихий лот: виден только вам и совету</span>}
         {l.status !== "active" && <span className={c.badge}>Снято</span>}
         {l.description && <p className={c.itemText}>{l.description}</p>}

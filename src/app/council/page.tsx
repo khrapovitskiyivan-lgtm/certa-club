@@ -7,7 +7,14 @@ import { currentCouncil } from "@/server/auth";
 import { store, type Member } from "@/server/store";
 import { logout } from "../auth-actions";
 import Link from "next/link";
-import { approveMember, deleteUnfinishedAction, markInquiryAction, revokeInviteAction } from "./actions";
+import {
+  approveMember,
+  createDemoListingsAction,
+  deleteUnfinishedAction,
+  markInquiryAction,
+  revokeInviteAction,
+  withdrawDemoListingsAction,
+} from "./actions";
 import { InviteForm } from "./invite-form";
 import { RoleSelect } from "./role-select";
 import { PasskeyOffer } from "../passkey/offer";
@@ -67,6 +74,7 @@ async function CouncilContent() {
     store.listCredentials(me.id),
   ]);
   const inquiries = await store.listInquiries();
+  const demoActive = (await store.listListings()).filter((l) => l.demo && l.status === "active").length;
   const openInquiries = inquiries.filter((i) => i.status === "new");
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
@@ -253,6 +261,27 @@ async function CouncilContent() {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className={c.section}>
+        <h2 className={c.h2}>
+          Тестовые лоты <span className={c.count}>{demoActive}</span>
+        </h2>
+        <p className={s.hint}>Шесть демонстрационных объявлений с отметкой «Тестовый», чтобы посмотреть витрину.</p>
+        <div style={{ display: "flex", gap: 28, marginTop: 14 }}>
+          <form action={createDemoListingsAction}>
+            <button type="submit" className={c.danger} style={{ color: "var(--accent)" }}>
+              Создать тестовые лоты
+            </button>
+          </form>
+          {demoActive > 0 && (
+            <form action={withdrawDemoListingsAction}>
+              <button type="submit" className={c.danger}>
+                Снять тестовые
+              </button>
+            </form>
+          )}
+        </div>
       </section>
 
       <section className={c.section}>

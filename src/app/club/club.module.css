@@ -200,3 +200,20 @@
     grid-template-columns: 1fr 90px;
   }
 }
+
+.photo {
+  width: calc(100% + 44px);
+  margin: -22px -22px 6px;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #ece6db;
+  display: block;
+}
+
+.photoLarge {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #ece6db;
+  display: block;
+}

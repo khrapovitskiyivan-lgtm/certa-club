@@ -14,8 +14,8 @@ export function ClubHeader({ me }: { me: Member }) {
       <nav className={c.nav}>
         <Link href="/club">Предложения</Link>
         <Link href="/club?tab=requests">Ищут в клубе</Link>
-        <Link href="/club/new?kind=offer">Предложить вещь</Link>
-        <Link href="/club/new?kind=request">Ищу вещь</Link>
+        <Link href="/club/new?kind=offer">Предложить</Link>
+        <Link href="/club/new?kind=request">Ищу</Link>
         {me.role === "council" && <Link href="/council">Совет</Link>}
         <form action={logout}>
           <button type="submit" className={c.navBtn}>

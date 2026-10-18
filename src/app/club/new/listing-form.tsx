@@ -139,7 +139,7 @@ export function ListingForm({ kind }: { kind: Listing["kind"] }) {
 
       {state.formError && <p className={s.formError}>{state.formError}</p>}
       <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Публикуем" : isOffer ? "Предложить вещь" : "Разместить запрос"}
+        {pending ? "Публикуем" : isOffer ? "Предложить" : "Разместить запрос"}
       </button>
     </form>
   );

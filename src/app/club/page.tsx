@@ -109,14 +109,18 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
         <p className={c.empty}>
           {all.length === 0
             ? tab === "offer"
-              ? "Предложений пока нет. Станьте первым: «Предложить вещь»."
-              : "Запросов пока нет. Ищете что-то? «Ищу вещь»."
+              ? "Предложений пока нет. Станьте первым: «Предложить»."
+              : "Запросов пока нет. Ищете что-то? «Ищу»."
             : "По этим условиям ничего не нашлось."}
         </p>
       ) : (
         <div className={c.grid}>
           {items.map((l) => (
             <Link key={l.id} href={`/club/item/${l.id}`} className={c.card}>
+              {l.photos?.[0] && (
+                // eslint-disable-next-line @next/next/no-img-element -- статичные SVG, оптимизация не нужна
+                <img src={l.photos[0]} alt="" className={c.photo} />
+              )}
               <span className={c.cardCat}>{CATEGORIES[l.category]}</span>
               <span className={c.cardTitle}>{l.title}</span>
               <span className={c.price}>{price(l)}</span>
@@ -124,6 +128,7 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
                 {l.country}, {l.city} · {l.authorPseudonym}
               </span>
               {l.quiet && <span className={c.badge}>Тихий лот</span>}
+              {l.demo && <span className={c.badge}>Тестовый</span>}
             </Link>
           ))}
         </div>

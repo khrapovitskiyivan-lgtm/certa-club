@@ -1,6 +1,8 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import type { Listing } from "@/core/listing";
 import { createInvite } from "@/core/invites";
 import { currentCouncil } from "@/server/auth";
 import { logEvent } from "@/server/events";
@@ -85,5 +87,96 @@ export async function markInquiryAction(formData: FormData): Promise<void> {
   const me = await currentCouncil();
   if (!me) return;
   await store.markInquiryHandled(String(formData.get("id") ?? ""));
+  revalidatePath("/council");
+}
+
+// Тестовые лоты для демонстрации витрины. Автор условный, псевдоним «Демо».
+const DEMO: Omit<Listing, "id" | "createdAt" | "status" | "authorId" | "authorPseudonym" | "demo">[] = [
+  {
+    kind: "offer",
+    category: "watches",
+    title: "Patek Philippe Nautilus 5711/1A",
+    description: "Синий циферблат, сталь. Полный комплект: коробка, документы, сервис 2024 года. Тестовый лот.",
+    amount: 12500000,
+    currency: "RUB",
+    country: "Россия",
+    city: "Москва",
+    photos: ["/demo/watch.svg"],
+  },
+  {
+    kind: "offer",
+    category: "jewelry",
+    title: "Кольцо с бриллиантом 2,1 карата",
+    description: "Платина, сертификат GIA, огранка «принцесса». Тестовый лот.",
+    onRequest: true,
+    currency: "USD",
+    country: "ОАЭ",
+    city: "Дубай",
+    photos: ["/demo/ring.svg"],
+  },
+  {
+    kind: "offer",
+    category: "art",
+    title: "Морской пейзаж на закате, холст, масло",
+    description: "Конец XIX века, провенанс прослеживается до 1920-х. Экспертиза по запросу. Тестовый лот.",
+    amount: 180000,
+    currency: "EUR",
+    country: "Великобритания",
+    city: "Лондон",
+    photos: ["/demo/painting.svg"],
+  },
+  {
+    kind: "offer",
+    category: "collectibles",
+    title: "Золотая монета 1913 года",
+    description: "Сохранность AU, в слабе. Тестовый лот.",
+    amount: 950000,
+    currency: "RUB",
+    country: "Россия",
+    city: "Санкт-Петербург",
+    photos: ["/demo/coin.svg"],
+  },
+  {
+    kind: "request",
+    category: "watches",
+    title: "Audemars Piguet Royal Oak 15500",
+    description: "Синий или серый циферблат, полный комплект. Тестовый запрос.",
+    amount: 4000000,
+    currency: "RUB",
+    country: "Россия",
+    city: "Москва",
+  },
+  {
+    kind: "request",
+    category: "art",
+    title: "Графика русского авангарда",
+    description: "Работы на бумаге 1910–1920-х, с провенансом. Тестовый запрос.",
+    currency: "EUR",
+    country: "Швейцария",
+    city: "Женева",
+  },
+];
+
+export async function createDemoListingsAction(): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const now = new Date().toISOString();
+  for (const d of DEMO) {
+    await store.addListing({ ...d, id: randomUUID(), authorId: "demo", authorPseudonym: "Демо", demo: true, status: "active", createdAt: now });
+  }
+  await logEvent("demo_created", `Созданы тестовые лоты (${me.pseudonym})`);
+  revalidatePath("/club");
+  revalidatePath("/council");
+}
+
+export async function withdrawDemoListingsAction(): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const now = new Date();
+  for (const l of await store.listListings()) {
+    if (l.demo && l.status === "active") await store.withdrawListing(l.id, now);
+  }
+  await logEvent("demo_withdrawn", `Тестовые лоты сняты (${me.pseudonym})`);
+  revalidatePath("/club");
   revalidatePath("/council");
 }

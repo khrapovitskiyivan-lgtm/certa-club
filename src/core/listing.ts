@@ -74,6 +74,10 @@ export type Listing = {
   quiet?: boolean;
   country: string;
   city: string;
+  // Адреса фото: пока только тестовые изображения из /demo, загрузка появится с файловым хранилищем.
+  photos?: string[];
+  // Тестовый лот, созданный советом для демонстрации витрины.
+  demo?: boolean;
   status: "active" | "withdrawn";
   createdAt: string;
   withdrawnAt?: string;
