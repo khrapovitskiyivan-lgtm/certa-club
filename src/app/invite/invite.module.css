@@ -1,0 +1,284 @@
+.page {
+  min-height: 100svh;
+  padding: 10vh 8vw 12vh;
+}
+
+.narrow {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.mark {
+  font-family: var(--font-serif), serif;
+  font-size: 22px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 9vh;
+}
+
+.title {
+  font-family: var(--font-serif), serif;
+  font-weight: 500;
+  font-size: clamp(32px, 5vw, 44px);
+  line-height: 1.15;
+  margin-bottom: 20px;
+}
+
+.lead {
+  color: var(--ink-2);
+  margin-bottom: 52px;
+}
+
+.back {
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+
+.form {
+  display: grid;
+  gap: 44px;
+}
+
+.group {
+  border: 0;
+  display: grid;
+  gap: 26px;
+}
+
+.legend {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 26px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0 8px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 300ms var(--ease);
+}
+
+.input:focus {
+  border-bottom-color: var(--accent);
+}
+
+.input[aria-invalid] {
+  border-bottom-color: var(--danger);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--ink-2);
+  opacity: 0.8;
+}
+
+.fieldError,
+.formError {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+.agree {
+  display: grid;
+  gap: 6px;
+}
+
+.check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.check input {
+  accent-color: var(--accent);
+  margin-top: 4px;
+}
+
+.submit {
+  justify-self: start;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: var(--accent);
+  border: 0;
+  padding: 16px 30px;
+  cursor: pointer;
+  transition: opacity 300ms var(--ease);
+}
+
+.submit:hover {
+  opacity: 0.88;
+}
+
+.submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 26px;
+  margin: -5vh 0 7vh;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.step,
+.stepDone,
+.stepCurrent {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--ink-2);
+  opacity: 0.55;
+}
+
+.stepDone {
+  opacity: 0.8;
+}
+
+.stepCurrent {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.stepNum {
+  font-family: var(--font-serif), serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+
+.latin {
+  font-family: var(--font-serif), serif;
+  font-style: italic;
+  font-size: 18px;
+}
+
+.about {
+  display: grid;
+  gap: 34px;
+  margin-bottom: 52px;
+}
+
+.aboutItem {
+  display: grid;
+  gap: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.aboutTitle {
+  font-family: var(--font-serif), serif;
+  font-weight: 500;
+  font-size: 22px;
+}
+
+.aboutText {
+  color: var(--ink-2);
+}
+
+.backBtn {
+  margin-top: 28px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 4px;
+}
+
+.options {
+  display: grid;
+  gap: 14px;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: border-color 300ms var(--ease);
+}
+
+.option:has(input:checked) {
+  border-color: var(--accent);
+}
+
+.option input {
+  accent-color: var(--accent);
+  margin-top: 5px;
+  grid-row: span 2;
+}
+
+.optionTitle {
+  font-family: var(--font-serif), serif;
+  font-size: 20px;
+}
+
+.optionText {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.select {
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0 8px;
+  outline: none;
+}
+
+.codeInput {
+  font-size: 24px;
+  letter-spacing: 0.4em;
+  max-width: 220px;
+}
+
+.qr {
+  display: block;
+  margin: 8px 0 18px;
+}
+
+.secret {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  word-break: break-all;
+}

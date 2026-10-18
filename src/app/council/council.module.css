@@ -1,0 +1,125 @@
+.wide {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 7vh;
+}
+
+.head p {
+  margin-bottom: 0;
+}
+
+.who {
+  display: flex;
+  gap: 22px;
+  align-items: baseline;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.section {
+  margin-bottom: 64px;
+}
+
+.h2 {
+  font-family: var(--font-serif), serif;
+  font-weight: 500;
+  font-size: 28px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+
+.count {
+  font-size: 18px;
+  color: var(--ink-2);
+  margin-left: 6px;
+}
+
+.card {
+  padding: 24px 0 28px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.name {
+  font-family: var(--font-serif), serif;
+  font-size: 22px;
+}
+
+.dl {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 8px 20px;
+  font-size: 14px;
+}
+
+.dl dt {
+  color: var(--ink-2);
+}
+
+.inviteBox {
+  display: grid;
+  gap: 16px;
+}
+
+.inline {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: 24px;
+  align-items: end;
+}
+
+.issued {
+  display: grid;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--accent);
+}
+
+.link {
+  font-family: ui-monospace, monospace;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.muted {
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .inline {
+    grid-template-columns: 1fr;
+  }
+  .dl {
+    grid-template-columns: 1fr;
+  }
+}
