@@ -1,13 +1,26 @@
-// Отправка писем. Почтовый сервис не выбран (зависит от юрисдикции и хостинга).
-// Пока: локально письма пишутся в .data/outbox.log; на сервере только в журнал сервера,
-// и то лишь при CERTA_MAIL_LOG=1 (временный режим для демонстрации, ссылки входа видны в журнале).
-// Подключение сервиса: заменить тело sendMail, сигнатура остаётся.
+// Отправка писем. Если заданы RESEND_API_KEY и MAIL_FROM, письмо уходит через Resend (HTTP API, без SDK).
+// Иначе: локально письма пишутся в .data/outbox.log, на сервере только в журнал при CERTA_MAIL_LOG=1.
+// Смена провайдера: заменить sendViaProvider, сигнатура sendMail остаётся.
 import { appendFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 
+async function sendViaProvider(to: string, subject: string, text: string): Promise<void> {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text }),
+  });
+  // Ошибку пишем без содержимого письма: в нём может быть ссылка входа.
+  if (!res.ok) console.error(`[почта] не отправлено: ${res.status} ${await res.text()}`);
+}
+
 export async function sendMail(to: string, subject: string, text: string): Promise<void> {
+  if (process.env.RESEND_API_KEY && process.env.MAIL_FROM) {
+    await sendViaProvider(to, subject, text);
+    return;
+  }
   const entry = `--- ${new Date().toISOString()}\nКому: ${to}\nТема: ${subject}\n\n${text}\n\n`;
   if (process.env.NODE_ENV === "production") {
     if (process.env.CERTA_MAIL_LOG === "1") console.log(`[почта]\n${entry}`);
