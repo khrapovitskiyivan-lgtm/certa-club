@@ -11,11 +11,10 @@ import s from "../invite.module.css";
 // Карточка ссылки-приглашения в мессенджере. Имя приглашённого не показываем: превью видно всем в чате.
 export const metadata: Metadata = {
   title: "Приглашение в Certa",
-  description: "Личное приглашение в закрытый клуб.",
+  description: null,
   openGraph: {
     title: "Приглашение в Certa",
-    description: "Личное приглашение в закрытый клуб.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Certa" }],
+    images: [{ url: "/og-v2.png", width: 1200, height: 630, alt: "Certa" }],
   },
 };
 

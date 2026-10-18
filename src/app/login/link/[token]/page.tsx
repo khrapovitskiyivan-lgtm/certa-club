@@ -6,11 +6,10 @@ import s from "../../../invite/invite.module.css";
 // Ссылку гасим только по нажатию кнопки: почтовые сканеры, открывающие ссылки заранее, её не потратят.
 export const metadata: Metadata = {
   title: "Вход в Certa",
-  description: "Ссылка для входа в закрытый клуб.",
+  description: null,
   openGraph: {
     title: "Вход в Certa",
-    description: "Ссылка для входа в закрытый клуб.",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Certa" }],
+    images: [{ url: "/og-v2.png", width: 1200, height: 630, alt: "Certa" }],
   },
 };
 
