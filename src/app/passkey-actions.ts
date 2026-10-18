@@ -10,6 +10,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
   type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
+import { sendMail } from "@/server/mail";
 import { relyingParty } from "@/server/passkey";
 import {
   clearPending,
@@ -28,10 +29,16 @@ function home(m: Member): string {
   return m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club";
 }
 
-// Кто сейчас вправе добавить ключ: только что зарегистрированный, вошедший по ссылке из письма
-// или уже вошедший участник (второе устройство).
+// Кто вправе добавить ключ:
+// - уже вошедший по ключу участник (новое устройство добавляется из действующей сессии);
+// - только что зарегистрированный или пришедший по ссылке из письма, но лишь пока ключей у него нет.
+// Иначе захват почты позволил бы привязать свой ключ к чужому аккаунту.
 async function enrollingMemberId(): Promise<string | null> {
-  return (await registrationMemberId()) ?? (await linkedMemberId()) ?? (await sessionMemberId());
+  const session = await sessionMemberId();
+  if (session) return session;
+  const id = (await registrationMemberId()) ?? (await linkedMemberId());
+  if (!id) return null;
+  return (await store.listCredentials(id)).length === 0 ? id : null;
 }
 
 export async function passkeyRegistrationOptions(): Promise<PublicKeyCredentialCreationOptionsJSON | null> {
@@ -58,6 +65,10 @@ export async function passkeyRegistrationOptions(): Promise<PublicKeyCredentialC
 export async function passkeyRegistrationVerify(response: RegistrationResponseJSON): Promise<Result> {
   const ch = await takeChallenge("reg");
   if (!ch?.memberId) return { ok: false, error: "Время ожидания истекло. Попробуйте ещё раз" };
+  // Повторная проверка права: между запросом параметров и ответом ключ мог уже появиться.
+  if ((await enrollingMemberId()) !== ch.memberId) {
+    return { ok: false, error: "Новое устройство добавляется из уже вошедшего. Войдите по Face ID на прежнем устройстве" };
+  }
   const m = await store.getMember(ch.memberId);
   if (!m) return { ok: false, error: "Участник не найден" };
   const { rpID, origin } = relyingParty();
@@ -84,6 +95,14 @@ export async function passkeyRegistrationVerify(response: RegistrationResponseJS
   } catch {
     return { ok: false, error: "Не удалось подтвердить устройство" };
   }
+  await sendMail(
+    m.email,
+    "Certa: добавлен ключ входа",
+    "К вашему аккаунту в Certa добавлен новый ключ входа (Face ID или отпечаток) на устройстве.
+
+" +
+      "Если это были не вы, срочно свяжитесь с куратором клуба: ключ будет отозван.",
+  );
   await clearPending();
   await startSession(m.id);
   return { ok: true, next: home(m) };

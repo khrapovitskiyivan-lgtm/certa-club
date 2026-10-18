@@ -20,7 +20,7 @@ export function Enroll() {
     try {
       const options = await passkeyRegistrationOptions();
       if (!options) {
-        setError("Сессия истекла. Откройте ссылку из письма или приглашения ещё раз");
+        setError("Ключ входа уже создан. Войдите по Face ID на прежнем устройстве или обратитесь к куратору клуба");
         return;
       }
       const response = await startRegistration({ optionsJSON: options });
