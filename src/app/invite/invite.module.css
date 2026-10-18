@@ -286,7 +286,7 @@
 .howto {
   display: grid;
   gap: 12px;
-  margin: -28px 0 28px 18px;
+  margin: 0 0 22px 18px;
   color: var(--ink-2);
   font-size: 14px;
 }
@@ -294,4 +294,16 @@
 .howto b {
   color: var(--ink);
   font-weight: 400;
+}
+
+.keyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  align-items: center;
+  margin-bottom: 44px;
+}
+
+.keyActions a.submit {
+  display: inline-block;
 }

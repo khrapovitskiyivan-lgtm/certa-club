@@ -7,6 +7,7 @@ import { pendingMemberId } from "@/server/session";
 import { store } from "@/server/store";
 import { signSetupSecret } from "@/server/totp-setup";
 import { SetupForm } from "../forms";
+import { KeyActions } from "./key-actions";
 import s from "../../invite/invite.module.css";
 
 export default function SetupPage() {
@@ -29,7 +30,8 @@ async function SetupContent() {
   if (!m || m.totpSecret) redirect("/login");
 
   const secret = generateSecret();
-  const qr = await QRCode.toDataURL(otpauthUri(secret, m.pseudonym), {
+  const uri = otpauthUri(secret, m.pseudonym);
+  const qr = await QRCode.toDataURL(uri, {
     margin: 0,
     width: 220,
     color: { dark: "#1f1d1aff", light: "#f3efe700" },
@@ -41,16 +43,26 @@ async function SetupContent() {
       <p className={s.lead}>
         Вход в клуб защищён шестизначным кодом с телефона, как в банке. Настраивается один раз.
       </p>
+      <h2 className={s.legend}>Регистрируетесь с телефона</h2>
       <ol className={s.howto}>
         <li>
-          <b>iPhone:</b> наведите камеру на код ниже и нажмите «Пароли» → «Добавить код проверки», затем сохраните
-          запись с названием Certa. Код появится в приложении «Пароли».
+          Нажмите кнопку ниже. На iPhone откроются «Пароли»: укажите сайт certa-club.vercel.app и сохраните. На
+          Android откроется Google Authenticator или Яндекс Ключ, если установлен.
+        </li>
+        <li>Вернитесь в браузер и введите шестизначный код из приложения в поле внизу страницы.</li>
+      </ol>
+      <KeyActions uri={uri} secret={secret} />
+
+      <h2 className={s.legend}>Регистрируетесь с компьютера</h2>
+      <ol className={s.howto}>
+        <li>
+          <b>iPhone:</b> наведите камеру телефона на код ниже, нажмите «Пароли» → «Добавить код проверки», укажите
+          сайт certa-club.vercel.app и сохраните.
         </li>
         <li>
-          <b>Android или другое:</b> откройте Google Authenticator или Яндекс Ключ, нажмите «+» → «Сканировать
-          QR-код» и наведите камеру на код ниже.
+          <b>Android:</b> в Google Authenticator или Яндекс Ключе нажмите «+» → «Сканировать QR-код».
         </li>
-        <li>В приложении появится шестизначный код, он меняется каждые 30 секунд. Введите его в поле ниже.</li>
+        <li>Шестизначный код из приложения (меняется каждые 30 секунд) введите в поле ниже.</li>
       </ol>
       {/* eslint-disable-next-line @next/next/no-img-element -- data URL, оптимизация не нужна */}
       <img src={qr} alt="QR-код для приложения-аутентификатора" width={220} height={220} className={s.qr} />
