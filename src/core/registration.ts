@@ -1,5 +1,6 @@
 // Контракт формы регистрации по приглашению: единый источник правды для клиента и сервера.
 import { z } from "zod";
+import { formatPhone, isCompletePhone } from "./phone";
 
 export const registrationSchema = z
   .object({
@@ -14,11 +15,12 @@ export const registrationSchema = z
     phone: z
       .string()
       .trim()
-      .regex(/^\+?[\d\s()-]{7,20}$/, "Проверьте номер телефона"),
+      .refine(isCompletePhone, "Проверьте номер телефона")
+      .transform(formatPhone),
     city: z.string().trim().min(2, "Укажите город").max(80),
     occupation: z.string().trim().min(2, "Расскажите в одной строке").max(160),
     about: z.string().trim().max(500, "Не больше 500 знаков").optional().default(""),
-    password: z.string().min(12, "Не короче 12 символов").max(128),
+    password: z.string().min(8, "Не короче 8 символов").max(128),
     passwordConfirm: z.string(),
     agreeRules: z.literal("on", { message: "Нужно согласие с правилами клуба" }),
   })

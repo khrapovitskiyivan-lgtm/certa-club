@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import { CITY_SUGGESTIONS, formatPhone } from "@/core/phone";
 import { register, type RegisterState } from "../../actions";
 import s from "../invite.module.css";
 
@@ -12,9 +13,10 @@ type FieldProps = {
   hint?: string;
   autoComplete?: string;
   textarea?: boolean;
+  list?: string;
 };
 
-function Field({ name, label, state, type = "text", hint, autoComplete, textarea }: FieldProps) {
+function Field({ name, label, state, type = "text", hint, autoComplete, textarea, list }: FieldProps) {
   const error = state.errors?.[name as keyof NonNullable<RegisterState["errors"]>];
   const common = {
     id: name,
@@ -30,12 +32,41 @@ function Field({ name, label, state, type = "text", hint, autoComplete, textarea
       <label htmlFor={name} className={s.label}>
         {label}
       </label>
-      {textarea ? <textarea rows={3} maxLength={500} {...common} /> : <input type={type} {...common} />}
+      {textarea ? <textarea rows={3} maxLength={500} {...common} /> : <input type={type} list={list} {...common} />}
       {hint && !error && <p className={s.hint}>{hint}</p>}
       {error && (
         <p id={`${name}-err`} className={s.fieldError}>
           {error}
         </p>
+      )}
+    </div>
+  );
+}
+
+// Телефон с маской: российский номер форматируется при вводе, иностранный вводится свободно.
+function PhoneField({ state }: { state: RegisterState }) {
+  const [value, setValue] = useState(state.values?.phone ?? "+7");
+  const error = state.errors?.phone;
+  return (
+    <div className={s.field}>
+      <label htmlFor="phone" className={s.label}>
+        Телефон
+      </label>
+      <input
+        id="phone"
+        name="phone"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        className={s.input}
+        value={value}
+        onChange={(e) => setValue(formatPhone(e.target.value))}
+        aria-invalid={error ? true : undefined}
+      />
+      {error ? (
+        <p className={s.fieldError}>{error}</p>
+      ) : (
+        <p className={s.hint}>Для другой страны сотрите +7 и введите её код, например +971</p>
       )}
     </div>
   );
@@ -50,8 +81,13 @@ export function RegisterForm({ code }: { code: string }) {
         <legend className={s.legend}>О вас</legend>
         <Field name="fullName" label="Имя и фамилия" state={state} autoComplete="name" />
         <Field name="email" label="Почта" type="email" state={state} autoComplete="email" />
-        <Field name="phone" label="Телефон" type="tel" state={state} autoComplete="tel" />
-        <Field name="city" label="Город" state={state} autoComplete="address-level2" />
+        <PhoneField state={state} />
+        <Field name="city" label="Город" state={state} autoComplete="address-level2" list="city-list" hint="Начните вводить, появятся подсказки" />
+        <datalist id="city-list">
+          {CITY_SUGGESTIONS.map((c) => (
+            <option key={c} value={c} />
+          ))}
+        </datalist>
         <Field name="occupation" label="Род занятий" state={state} hint="Одной строкой" />
         <Field
           name="about"
@@ -76,7 +112,7 @@ export function RegisterForm({ code }: { code: string }) {
           type="password"
           state={state}
           autoComplete="new-password"
-          hint="Не короче 12 символов"
+          hint="Не короче 8 символов"
         />
         <Field name="passwordConfirm" label="Пароль ещё раз" type="password" state={state} autoComplete="new-password" />
       </fieldset>

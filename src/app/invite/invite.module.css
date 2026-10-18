@@ -282,3 +282,16 @@
   color: var(--ink);
   word-break: break-all;
 }
+
+.howto {
+  display: grid;
+  gap: 12px;
+  margin: -28px 0 28px 18px;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.howto b {
+  color: var(--ink);
+  font-weight: 400;
+}
