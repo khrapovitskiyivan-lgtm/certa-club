@@ -10,7 +10,12 @@ let ready: Promise<void> | null = null;
 
 function sql(): postgres.Sql {
   // Ленивое подключение: модуль импортируется и там, где база не настроена.
-  client ??= postgres(process.env.DATABASE_URL!, { max: 5, onnotice: () => {}, ssl: process.env.DATABASE_URL!.includes("localhost") ? false : "require" });
+  if (!client) {
+    const url = process.env.DATABASE_URL!;
+    // Удалённая база только с проверкой сертификата и имени хоста; без TLS только локальная.
+    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(url).hostname);
+    client = postgres(url, { max: 5, onnotice: () => {}, ssl: local ? false : "verify-full" });
+  }
   return client;
 }
 
