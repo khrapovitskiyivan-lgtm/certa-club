@@ -69,10 +69,9 @@ export async function verifyCode(_prev: AuthState, formData: FormData): Promise<
   const m = await store.getMember(id);
   if (!m?.totpSecret) redirect("/login");
   const step = matchTotp(m.totpSecret, String(formData.get("code") ?? ""), Date.now(), m.totpLastStep ?? -1);
-  if (step === null) {
+  if (step === null || !(await store.consumeTotpStep(m.id, step))) {
     return { error: "Код не подошёл. Дождитесь нового кода в приложении и введите его" };
   }
-  await store.updateMember(m.id, { totpLastStep: step });
   codeLimiter.reset(id);
   await clearPending();
   await startSession(m.id);

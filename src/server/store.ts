@@ -104,6 +104,17 @@ export const store = {
   async listMembers(): Promise<Member[]> {
     return (await load()).members;
   },
+  // Атомарно отмечает шаг TOTP использованным; false, если этот или более поздний шаг уже был.
+  consumeTotpStep(id: string, step: number): Promise<boolean> {
+    return exclusive(async () => {
+      const d = await load();
+      const m = d.members.find((x) => x.id === id);
+      if (!m || step <= (m.totpLastStep ?? -1)) return false;
+      m.totpLastStep = step;
+      await save(d);
+      return true;
+    });
+  },
   // Частичное обновление участника одной операцией.
   updateMember(id: string, patch: Partial<Omit<Member, "id">>): Promise<boolean> {
     return exclusive(async () => {
