@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { validateOffer, validateRequest, type FieldErrors, type Listing } from "@/core/listing";
+import { validateOffer, validateRequest, visibleTo, type FieldErrors, type Listing } from "@/core/listing";
 import { currentMember } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { store, type Member } from "@/server/store";
@@ -97,7 +97,8 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
   const m = await activeMember();
   if (!m) return { error: "Войдите в клуб" };
   const l = await store.getListing(String(formData.get("id") ?? ""));
-  if (!l || l.status !== "active") return { error: "Объявление снято" };
+  // Тот же доступ, что и на чтение: тихий лот недоступен тем, кто его не видит.
+  if (!l || l.status !== "active" || !visibleTo(l, m.id, m.role === "council")) return { error: "Объявление снято" };
   if (l.authorId === m.id) return { error: "Это ваше объявление" };
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000);
   await store.addInquiry({
