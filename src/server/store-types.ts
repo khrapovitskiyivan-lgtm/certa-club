@@ -1,6 +1,7 @@
 // Модель данных хранилища и его контракт. Реализации: файл (разработка) и Postgres (сервер).
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
+import type { Listing } from "../core/listing";
 
 export type Member = {
   id: string;
@@ -49,7 +50,29 @@ export type ClubEvent = {
   memberId?: string;
 };
 
+// Отклик на лот или запрос: уходит куратору, он связывает стороны.
+export type Inquiry = {
+  id: string;
+  listingId: string;
+  listingKind: "offer" | "request";
+  listingTitle: string;
+  authorId: string;
+  authorPseudonym: string;
+  fromId: string;
+  fromPseudonym: string;
+  message: string;
+  status: "new" | "handled";
+  createdAt: string;
+};
+
 export type Store = {
+  addListing(l: Listing): Promise<void>;
+  getListing(id: string): Promise<Listing | undefined>;
+  listListings(): Promise<Listing[]>;
+  withdrawListing(id: string, now: Date): Promise<boolean>;
+  addInquiry(i: Inquiry): Promise<void>;
+  listInquiries(): Promise<Inquiry[]>;
+  markInquiryHandled(id: string): Promise<void>;
   addEvent(e: ClubEvent): Promise<void>;
   listEvents(limit: number): Promise<ClubEvent[]>;
   // Отзыв ещё не использованного приглашения.

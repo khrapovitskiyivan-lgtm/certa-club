@@ -79,3 +79,11 @@ export async function setRoleAction(formData: FormData): Promise<void> {
   await logEvent("role_changed", `Роль ${m.pseudonym}: ${ROLE_NAMES[current]} → ${ROLE_NAMES[role]} (${me.pseudonym})`, id);
   revalidatePath("/council");
 }
+
+// Куратор отметил отклик обработанным (связал стороны).
+export async function markInquiryAction(formData: FormData): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  await store.markInquiryHandled(String(formData.get("id") ?? ""));
+  revalidatePath("/council");
+}

@@ -3,7 +3,8 @@
 import postgres from "postgres";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { ClubEvent, Credential, Member, Store } from "./store-types";
+import type { Listing } from "../core/listing";
+import type { ClubEvent, Credential, Inquiry, Member, Store } from "./store-types";
 
 let client: postgres.Sql | null = null;
 let ready: Promise<void> | null = null;
@@ -25,6 +26,8 @@ function schema(): Promise<void> {
     const db = sql();
     await db`create table if not exists invites (code_hash text primary key, data jsonb not null)`;
     await db`create table if not exists members (id text primary key, email text unique not null, data jsonb not null)`;
+    await db`create table if not exists listings (id text primary key, created_at timestamptz not null, data jsonb not null)`;
+    await db`create table if not exists inquiries (id text primary key, created_at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists events (id text primary key, at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists credentials (id text primary key, member_id text not null, data jsonb not null)`;
     await db`create table if not exists login_links (
@@ -38,6 +41,46 @@ type Json = Parameters<postgres.Sql["json"]>[0];
 const j = (v: unknown) => sql().json(v as Json);
 
 export const pgStore: Store = {
+  async addListing(l) {
+    await schema();
+    await sql()`insert into listings (id, created_at, data) values (${l.id}, ${l.createdAt}, ${j(l)})`;
+  },
+
+  async getListing(id) {
+    await schema();
+    const rows = await sql()`select data from listings where id = ${id}`;
+    return rows[0]?.data as Listing | undefined;
+  },
+
+  async listListings() {
+    await schema();
+    const rows = await sql()`select data from listings order by created_at desc`;
+    return rows.map((r) => r.data as Listing);
+  },
+
+  async withdrawListing(id, now) {
+    await schema();
+    const rows = await sql()`update listings set data = data || ${j({ status: "withdrawn", withdrawnAt: now.toISOString() })}
+      where id = ${id} and data->>'status' = 'active' returning id`;
+    return rows.length > 0;
+  },
+
+  async addInquiry(i) {
+    await schema();
+    await sql()`insert into inquiries (id, created_at, data) values (${i.id}, ${i.createdAt}, ${j(i)})`;
+  },
+
+  async listInquiries() {
+    await schema();
+    const rows = await sql()`select data from inquiries order by created_at desc`;
+    return rows.map((r) => r.data as Inquiry);
+  },
+
+  async markInquiryHandled(id) {
+    await schema();
+    await sql()`update inquiries set data = data || ${j({ status: "handled" })} where id = ${id}`;
+  },
+
   async addEvent(e) {
     await schema();
     await sql()`insert into events (id, at, data) values (${e.id}, ${e.at}, ${j(e)})`;

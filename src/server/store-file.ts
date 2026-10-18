@@ -3,9 +3,10 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { ClubEvent, Credential, Member, Store, Verification } from "./store-types";
+import type { Listing } from "../core/listing";
+import type { ClubEvent, Credential, Inquiry, Member, Store, Verification } from "./store-types";
 
-type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[] };
+type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[]; listings?: Listing[]; inquiries?: Inquiry[] };
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 const FILE = path.join(DATA_DIR, "store.json");
@@ -35,6 +36,48 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export const fileStore: Store = {
+  addListing(l) {
+    return exclusive(async () => {
+      const d = await load();
+      (d.listings ??= []).push(l);
+      await save(d);
+    });
+  },
+  async getListing(id) {
+    return (await load()).listings?.find((l) => l.id === id);
+  },
+  async listListings() {
+    return [...((await load()).listings ?? [])].reverse();
+  },
+  withdrawListing(id, now) {
+    return exclusive(async () => {
+      const d = await load();
+      const l = d.listings?.find((x) => x.id === id);
+      if (!l || l.status !== "active") return false;
+      l.status = "withdrawn";
+      l.withdrawnAt = now.toISOString();
+      await save(d);
+      return true;
+    });
+  },
+  addInquiry(i) {
+    return exclusive(async () => {
+      const d = await load();
+      (d.inquiries ??= []).push(i);
+      await save(d);
+    });
+  },
+  async listInquiries() {
+    return [...((await load()).inquiries ?? [])].reverse();
+  },
+  markInquiryHandled(id) {
+    return exclusive(async () => {
+      const d = await load();
+      const i = d.inquiries?.find((x) => x.id === id);
+      if (i) i.status = "handled";
+      await save(d);
+    });
+  },
   addEvent(e) {
     return exclusive(async () => {
       const d = await load();

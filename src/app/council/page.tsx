@@ -6,7 +6,8 @@ import { AGENT_TYPES } from "@/core/verification";
 import { currentCouncil } from "@/server/auth";
 import { store, type Member } from "@/server/store";
 import { logout } from "../auth-actions";
-import { approveMember, deleteUnfinishedAction, revokeInviteAction } from "./actions";
+import Link from "next/link";
+import { approveMember, deleteUnfinishedAction, markInquiryAction, revokeInviteAction } from "./actions";
 import { InviteForm } from "./invite-form";
 import { RoleSelect } from "./role-select";
 import { PasskeyOffer } from "../passkey/offer";
@@ -65,6 +66,8 @@ async function CouncilContent() {
     store.listEvents(200),
     store.listCredentials(me.id),
   ]);
+  const inquiries = await store.listInquiries();
+  const openInquiries = inquiries.filter((i) => i.status === "new");
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
   const active = members.filter((m) => m.status === "active");
@@ -75,6 +78,7 @@ async function CouncilContent() {
         <p className={s.mark}>Certa</p>
         <div className={c.who}>
           <span>Экспертный совет · {me.pseudonym}</span>
+          <Link href="/club">Витрина</Link>
           <form action={logout}>
             <button type="submit" className={s.backBtn}>
               Выйти
@@ -126,6 +130,41 @@ async function CouncilContent() {
             </dl>
           </article>
         ))}
+      </section>
+
+      <section className={c.section}>
+        <h2 className={c.h2}>
+          Отклики <span className={c.count}>{openInquiries.length}</span>
+        </h2>
+        {openInquiries.length === 0 && <p className={s.hint}>Новых откликов на лоты и запросы нет.</p>}
+        <table className={c.table}>
+          <tbody>
+            {openInquiries.map((i) => (
+              <tr key={i.id}>
+                <td className={c.muted}>{fmtTime(i.createdAt)}</td>
+                <td>
+                  <Link href={`/club/item/${i.listingId}`}>«{i.listingTitle}»</Link>
+                  <br />
+                  {i.listingKind === "offer" ? "запрос по лоту" : "«есть у меня»"}: {i.fromPseudonym} → {i.authorPseudonym}
+                  {i.message && (
+                    <>
+                      <br />
+                      <span className={c.muted}>{i.message}</span>
+                    </>
+                  )}
+                </td>
+                <td>
+                  <form action={markInquiryAction}>
+                    <input type="hidden" name="id" value={i.id} />
+                    <button type="submit" className={c.danger} style={{ color: "var(--accent)" }}>
+                      Стороны связаны
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className={c.section}>
