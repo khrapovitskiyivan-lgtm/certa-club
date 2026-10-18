@@ -6,7 +6,7 @@ import { AGENT_TYPES } from "@/core/verification";
 import { currentCouncil } from "@/server/auth";
 import { store, type Member } from "@/server/store";
 import { logout } from "../auth-actions";
-import { approveMember } from "./actions";
+import { approveMember, deleteUnfinishedAction, revokeInviteAction } from "./actions";
 import { InviteForm } from "./invite-form";
 import s from "../invite/invite.module.css";
 import c from "./council.module.css";
@@ -25,6 +25,17 @@ export default function CouncilPage() {
 
 const fmt = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "";
+// Дата и время по Москве: для журнала и регистраций важна точная минута.
+const fmtTime = (iso?: string) =>
+  iso
+    ? new Date(iso).toLocaleString("ru-RU", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Moscow",
+      })
+    : "";
 
 function verificationText(m: Member): string {
   const v = m.verification;
@@ -36,6 +47,7 @@ function verificationText(m: Member): string {
 // Страница динамическая (connection), поэтому текущее время читается на каждый запрос.
 function inviteStatus(i: Invite): string {
   if (i.usedAt) return "использовано";
+  if (i.revokedAt) return "отозвано";
   return new Date(i.expiresAt).getTime() < Date.now() ? "истекло" : "ждёт";
 }
 
@@ -44,7 +56,7 @@ async function CouncilContent() {
   const me = await currentCouncil();
   if (!me) redirect("/login");
 
-  const [members, invites] = await Promise.all([store.listMembers(), store.listInvites()]);
+  const [members, invites, events] = await Promise.all([store.listMembers(), store.listInvites(), store.listEvents(200)]);
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
   const active = members.filter((m) => m.status === "active");
@@ -125,12 +137,32 @@ async function CouncilContent() {
                 <td>с {fmt(m.activatedAt ?? m.createdAt)}</td>
               </tr>
             ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className={c.section}>
+        <h2 className={c.h2}>
+          Не завершили вступление <span className={c.count}>{waitingKyc.length}</span>
+        </h2>
+        <p className={s.hint}>Заполнили анкету, но ещё не отправили верификацию. После неё они появятся в «На рассмотрении».</p>
+        <table className={c.table}>
+          <tbody>
             {waitingKyc.map((m) => (
               <tr key={m.id} className={c.muted}>
                 <td>{m.pseudonym}</td>
                 <td>{m.fullName}</td>
-                <td>ждём верификацию</td>
-                <td>{fmt(m.createdAt)}</td>
+                <td>
+                  по приглашению «{m.invitedAs}» · {fmtTime(m.createdAt)}
+                </td>
+                <td>
+                  <form action={deleteUnfinishedAction}>
+                    <input type="hidden" name="id" value={m.id} />
+                    <button type="submit" className={c.danger}>
+                      Удалить регистрацию
+                    </button>
+                  </form>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -142,10 +174,41 @@ async function CouncilContent() {
         <table className={c.table}>
           <tbody>
             {[...invites].reverse().map((i) => (
-              <tr key={i.codeHash} className={i.usedAt ? c.muted : undefined}>
+              <tr key={i.codeHash} className={i.usedAt || i.revokedAt ? c.muted : undefined}>
                 <td>{i.inviteeName}</td>
                 <td>{inviteStatus(i)}</td>
-                <td>{i.usedAt ? fmt(i.usedAt) : `до ${fmt(i.expiresAt)}`}</td>
+                <td>
+                  {i.usedAt
+                    ? fmtTime(i.usedAt)
+                    : i.revokedAt
+                      ? fmtTime(i.revokedAt)
+                      : `создано ${fmtTime(i.createdAt)}, до ${fmt(i.expiresAt)}`}
+                </td>
+                <td>
+                  {inviteStatus(i) === "ждёт" && (
+                    <form action={revokeInviteAction}>
+                      <input type="hidden" name="codeHash" value={i.codeHash} />
+                      <button type="submit" className={c.danger}>
+                        Отозвать
+                      </button>
+                    </form>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className={c.section}>
+        <h2 className={c.h2}>Журнал</h2>
+        {events.length === 0 && <p className={s.hint}>Событий пока нет.</p>}
+        <table className={c.table}>
+          <tbody>
+            {events.map((e) => (
+              <tr key={e.id}>
+                <td className={c.muted}>{fmtTime(e.at)}</td>
+                <td>{e.text}</td>
               </tr>
             ))}
           </tbody>

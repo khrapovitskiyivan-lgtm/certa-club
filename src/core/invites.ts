@@ -16,11 +16,13 @@ export type Invite = {
   createdAt: string;
   expiresAt: string;
   usedAt?: string;
+  // Отозвано советом до использования.
+  revokedAt?: string;
 };
 
 export type InviteCheck =
   | { ok: true; invite: Invite }
-  | { ok: false; reason: "not_found" | "used" | "expired" };
+  | { ok: false; reason: "not_found" | "used" | "expired" | "revoked" };
 
 export function generateCode(): string {
   const groups: string[] = [];
@@ -73,6 +75,7 @@ export function checkInvite(invites: readonly Invite[], input: string, now: Date
   const invite = invites.find((i) => sameHash(i.codeHash, h));
   if (!invite) return { ok: false, reason: "not_found" };
   if (invite.usedAt) return { ok: false, reason: "used" };
+  if (invite.revokedAt) return { ok: false, reason: "revoked" };
   if (new Date(invite.expiresAt).getTime() <= now.getTime()) return { ok: false, reason: "expired" };
   return { ok: true, invite };
 }

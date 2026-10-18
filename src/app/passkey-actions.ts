@@ -10,6 +10,7 @@ import {
   type PublicKeyCredentialRequestOptionsJSON,
   type RegistrationResponseJSON,
 } from "@simplewebauthn/server";
+import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { relyingParty } from "@/server/passkey";
 import {
@@ -101,6 +102,7 @@ export async function passkeyRegistrationVerify(response: RegistrationResponseJS
     "К вашему аккаунту в Certa добавлен новый ключ входа (Face ID или отпечаток) на устройстве.\n\n" +
       "Если это были не вы, срочно свяжитесь с куратором клуба: ключ будет отозван.",
   );
+  await logEvent("passkey_added", `Добавлен ключ входа: ${m.pseudonym}`, m.id);
   await clearPending();
   await startSession(m.id);
   return { ok: true, next: home(m) };
@@ -137,6 +139,7 @@ export async function passkeyAuthenticationVerify(response: AuthenticationRespon
     });
     if (!v.verified) return { ok: false, error: "Не удалось подтвердить вход" };
     await store.updateCredentialCounter(cred.id, v.authenticationInfo.newCounter);
+    await logEvent("login", `Вход по Face ID: ${m.pseudonym}`, m.id);
   } catch {
     return { ok: false, error: "Не удалось подтвердить вход" };
   }

@@ -39,7 +39,22 @@ export type Credential = {
   createdAt: string;
 };
 
+// Событие журнала клуба: хранится в базе без ограничения срока, видно совету.
+export type ClubEvent = {
+  id: string;
+  at: string;
+  type: string;
+  text: string;
+  memberId?: string;
+};
+
 export type Store = {
+  addEvent(e: ClubEvent): Promise<void>;
+  listEvents(limit: number): Promise<ClubEvent[]>;
+  // Отзыв ещё не использованного приглашения.
+  revokeInvite(codeHash: string, now: Date): Promise<boolean>;
+  // Удаление незавершённой регистрации: только неактивный участник не из совета, вместе с его ключами.
+  deleteUnfinishedMember(id: string): Promise<boolean>;
   addCredential(c: Credential): Promise<void>;
   getCredential(id: string): Promise<Credential | undefined>;
   listCredentials(memberId: string): Promise<Credential[]>;

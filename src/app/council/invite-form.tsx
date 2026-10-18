@@ -32,6 +32,10 @@ export function InviteForm() {
       {state.link && (
         <div className={c.issued}>
           <p className={s.label}>Приглашение создано: {state.name}. Ссылка показывается один раз, сохраните её.</p>
+          <p className={c.warn}>
+            Не открывайте ссылку сами: она одноразовая и сработает только для первого, кто по ней зарегистрируется.
+            Отправьте её лично и попросите открыть в Safari или Chrome, а не внутри Telegram.
+          </p>
           <p className={c.link}>{state.link}</p>
           <p className={s.hint}>Код для ввода на главной: {state.code}</p>
           <button

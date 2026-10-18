@@ -3,7 +3,7 @@
 import postgres from "postgres";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { Credential, Member, Store } from "./store-types";
+import type { ClubEvent, Credential, Member, Store } from "./store-types";
 
 let client: postgres.Sql | null = null;
 let ready: Promise<void> | null = null;
@@ -25,6 +25,7 @@ function schema(): Promise<void> {
     const db = sql();
     await db`create table if not exists invites (code_hash text primary key, data jsonb not null)`;
     await db`create table if not exists members (id text primary key, email text unique not null, data jsonb not null)`;
+    await db`create table if not exists events (id text primary key, at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists credentials (id text primary key, member_id text not null, data jsonb not null)`;
     await db`create table if not exists login_links (
       token_hash text primary key, member_id text not null,
@@ -37,6 +38,35 @@ type Json = Parameters<postgres.Sql["json"]>[0];
 const j = (v: unknown) => sql().json(v as Json);
 
 export const pgStore: Store = {
+  async addEvent(e) {
+    await schema();
+    await sql()`insert into events (id, at, data) values (${e.id}, ${e.at}, ${j(e)})`;
+  },
+
+  async listEvents(limit) {
+    await schema();
+    const rows = await sql()`select data from events order by at desc limit ${limit}`;
+    return rows.map((r) => r.data as ClubEvent);
+  },
+
+  async revokeInvite(codeHash, now) {
+    await schema();
+    const rows = await sql()`update invites set data = data || ${j({ revokedAt: now.toISOString() })}
+      where code_hash = ${codeHash} and data->>'usedAt' is null and data->>'revokedAt' is null returning code_hash`;
+    return rows.length > 0;
+  },
+
+  async deleteUnfinishedMember(id) {
+    await schema();
+    return sql().begin(async (tx) => {
+      const rows = await tx`delete from members where id = ${id}
+        and data->>'status' <> 'active' and coalesce(data->>'role', '') <> 'council' returning id`;
+      if (!rows.length) return false;
+      await tx`delete from credentials where member_id = ${id}`;
+      return true;
+    });
+  },
+
   async addCredential(c) {
     await schema();
     await sql()`insert into credentials (id, member_id, data) values (${c.id}, ${c.memberId}, ${j(c)})`;

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { checkInvite, normalizeCode } from "@/core/invites";
+import { logEvent } from "@/server/events";
 import { store } from "@/server/store";
 import { Onboarding } from "./onboarding";
 import s from "../invite.module.css";
@@ -43,6 +44,8 @@ async function InviteContent({ params }: { params: Promise<{ code: string }> }) 
               ? "По этому приглашению уже прошла регистрация."
               : check.reason === "expired"
                 ? "Срок действия приглашения истёк."
+                : check.reason === "revoked"
+                  ? "Приглашение отозвано."
                 : "Мы не нашли такого приглашения."}{" "}
             Если вы считаете, что это ошибка, обратитесь к тому, кто вас пригласил.
           </p>
@@ -54,6 +57,7 @@ async function InviteContent({ params }: { params: Promise<{ code: string }> }) 
     );
   }
 
+  await logEvent("invite_opened", `Открыто приглашение «${check.invite.inviteeName}»`);
   return (
     <main className={s.page}>
       <div className={s.narrow}>

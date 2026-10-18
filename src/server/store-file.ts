@@ -3,9 +3,9 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { Credential, Member, Store, Verification } from "./store-types";
+import type { ClubEvent, Credential, Member, Store, Verification } from "./store-types";
 
-type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[] };
+type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[] };
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 const FILE = path.join(DATA_DIR, "store.json");
@@ -35,6 +35,37 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export const fileStore: Store = {
+  addEvent(e) {
+    return exclusive(async () => {
+      const d = await load();
+      (d.events ??= []).push(e);
+      await save(d);
+    });
+  },
+  async listEvents(limit) {
+    return [...((await load()).events ?? [])].reverse().slice(0, limit);
+  },
+  revokeInvite(codeHash, now) {
+    return exclusive(async () => {
+      const d = await load();
+      const i = d.invites.find((x) => x.codeHash === codeHash);
+      if (!i || i.usedAt || i.revokedAt) return false;
+      i.revokedAt = now.toISOString();
+      await save(d);
+      return true;
+    });
+  },
+  deleteUnfinishedMember(id) {
+    return exclusive(async () => {
+      const d = await load();
+      const m = d.members.find((x) => x.id === id);
+      if (!m || m.status === "active" || m.role === "council") return false;
+      d.members = d.members.filter((x) => x.id !== id);
+      d.credentials = (d.credentials ?? []).filter((c) => c.memberId !== id);
+      await save(d);
+      return true;
+    });
+  },
   addCredential(c) {
     return exclusive(async () => {
       const d = await load();

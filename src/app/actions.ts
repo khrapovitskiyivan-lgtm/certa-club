@@ -8,6 +8,7 @@ import { checkInvite, hashCode, normalizeCode } from "@/core/invites";
 import { validateRegistration, type FieldErrors } from "@/core/registration";
 import { validateVerification, type VerificationErrors } from "@/core/verification";
 import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter } from "@/server/auth";
+import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { registrationMemberId, sessionMemberId, startRegistration } from "@/server/session";
 import { store } from "@/server/store";
@@ -44,6 +45,7 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
     after(async () => {
       const m = await store.findByEmail(email);
       if (!m) return;
+      await logEvent("login_link", `Запрошена ссылка входа: ${m.pseudonym}`, m.id);
       const { token, link } = createLoginLink(m.id, new Date());
       await store.addLoginLink(link);
       const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
@@ -103,6 +105,7 @@ export async function register(code: string, _prev: RegisterState, formData: For
   if (result === "unavailable") return { formError: "Приглашение уже использовано", values };
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
   // Следующий шаг: ключ входа (Face ID). Полная сессия появится только после него.
+  await logEvent("registered", `Регистрация: ${d.pseudonym} (${d.fullName}) по приглашению «${check.invite.inviteeName}»`, memberId);
   await startRegistration(memberId);
   redirect("/passkey");
 }
@@ -125,5 +128,6 @@ export async function submitVerification(_prev: VerifyState, formData: FormData)
       : { ...v.data, submittedAt },
   );
   if (!ok) return { formError: "Не удалось сохранить. Обратитесь к куратору клуба.", values };
+  await logEvent("verification", `Отправлена верификация: ${v.data.method === "self" ? "лично" : "через агента"}`, id);
   redirect("/welcome");
 }

@@ -47,6 +47,11 @@ describe("проверка приглашения", () => {
     expect(checkInvite([used], code, NOW)).toEqual({ ok: false, reason: "used" });
   });
 
+  it("отозванное приглашение", () => {
+    const { code, invite } = createInvite("Сергей", NOW, 14);
+    expect(checkInvite([{ ...invite, revokedAt: NOW.toISOString() }], code, NOW)).toEqual({ ok: false, reason: "revoked" });
+  });
+
   it("просроченное приглашение", () => {
     const { code, invite } = createInvite("Сергей", NOW, 14);
     const later = new Date(NOW.getTime() + 15 * 24 * 3600 * 1000);

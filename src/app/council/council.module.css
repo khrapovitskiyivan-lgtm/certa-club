@@ -123,3 +123,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+.danger {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 0;
+}
+
+.warn {
+  font-size: 13px;
+  color: var(--danger);
+}
