@@ -15,12 +15,12 @@ export const emailLinkLimiter = createLimiter(3, 15 * 60 * 1000);
 export const inviteGlobalLimiter = createLimiter(200, 15 * 60 * 1000);
 
 // X-Forwarded-For задаёт клиент. Доверяем только последней записи, которую добавил наш прокси,
-// и только если прокси явно включён (CERTA_TRUST_PROXY=1). Иначе адрес не определяем.
-export async function clientIp(): Promise<string> {
-  if (process.env.CERTA_TRUST_PROXY !== "1") return "direct";
+// и только если прокси явно включён (CERTA_TRUST_PROXY=1). Иначе адрес неизвестен (null),
+// и лимит по адресу пропускается; лимиты по почте, участнику и общий действуют всегда.
+export async function clientIp(): Promise<string | null> {
+  if (process.env.CERTA_TRUST_PROXY !== "1") return null;
   const xff = (await headers()).get("x-forwarded-for");
-  const last = xff?.split(",").map((x) => x.trim()).filter(Boolean).pop();
-  return last || "unknown";
+  return xff?.split(",").map((x) => x.trim()).filter(Boolean).pop() ?? null;
 }
 
 export async function currentMember(): Promise<Member | null> {

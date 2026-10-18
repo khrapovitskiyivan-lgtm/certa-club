@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { base32Decode, base32Encode, generateSecret, hotp, totp, verifyTotp } from "./totp";
+import { base32Decode, base32Encode, generateSecret, hotp, matchTotp, totp, verifyTotp } from "./totp";
 import { createLimiter } from "./ratelimit";
 
 // Эталонный секрет RFC 4226 / 6238: ASCII "12345678901234567890".
@@ -27,6 +27,14 @@ describe("TOTP", () => {
     expect(verifyTotp(s, totp(s, now), now)).toBe(true);
     expect(verifyTotp(s, totp(s, now - 30_000), now)).toBe(true);
     expect(verifyTotp(s, totp(s, now - 120_000), now)).toBe(false);
+  });
+
+  it("код одноразовый: уже использованный шаг отвергается", () => {
+    const s = generateSecret();
+    const now = 1_800_000_000_000;
+    const step = matchTotp(s, totp(s, now), now);
+    expect(step).not.toBeNull();
+    expect(matchTotp(s, totp(s, now), now, step!)).toBeNull();
   });
 
   it("отвергает мусор", () => {

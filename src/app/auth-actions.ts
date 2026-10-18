@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { verifyTotp } from "@/core/totp";
+import { matchTotp } from "@/core/totp";
 import { clientIp, codeLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
 import { verifyPassword } from "@/server/password";
 import { clearPending, endSession, linkedMemberId, pendingMemberId, startLinked, startPending, startSession } from "@/server/session";
@@ -23,7 +23,8 @@ export async function login(_prev: AuthState, formData: FormData): Promise<AuthS
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "Введите почту и пароль", email };
   const now = Date.now();
-  if (!loginLimiter.hit(email, now) || !loginIpLimiter.hit(await clientIp(), now)) {
+  const ip = await clientIp();
+  if (!loginLimiter.hit(email, now) || (ip && !loginIpLimiter.hit(ip, now))) {
     return { error: TOO_MANY, email };
   }
 
@@ -67,9 +68,11 @@ export async function verifyCode(_prev: AuthState, formData: FormData): Promise<
   if (!codeLimiter.hit(id, Date.now())) return { error: TOO_MANY };
   const m = await store.getMember(id);
   if (!m?.totpSecret) redirect("/login");
-  if (!verifyTotp(m.totpSecret, String(formData.get("code") ?? ""), Date.now())) {
-    return { error: "Код не подошёл. Проверьте время на телефоне и введите новый код" };
+  const step = matchTotp(m.totpSecret, String(formData.get("code") ?? ""), Date.now(), m.totpLastStep ?? -1);
+  if (step === null) {
+    return { error: "Код не подошёл. Дождитесь нового кода в приложении и введите его" };
   }
+  await store.updateMember(m.id, { totpLastStep: step });
   codeLimiter.reset(id);
   await clearPending();
   await startSession(m.id);
@@ -83,12 +86,13 @@ export async function confirmSetup(_prev: AuthState, formData: FormData): Promis
   const secret = String(formData.get("secret") ?? "");
   const sig = String(formData.get("sig") ?? "");
   if (!checkSetupSecret(id, secret, sig)) return { error: "Обновите страницу и отсканируйте код заново" };
-  if (!verifyTotp(secret, String(formData.get("code") ?? ""), Date.now())) {
+  const step = matchTotp(secret, String(formData.get("code") ?? ""), Date.now());
+  if (step === null) {
     return { error: "Код не подошёл. Проверьте время на телефоне и введите новый код" };
   }
   const m = await store.getMember(id);
   if (!m || m.totpSecret) redirect("/login");
-  await store.updateMember(id, { totpSecret: secret });
+  await store.updateMember(id, { totpSecret: secret, totpLastStep: step });
   codeLimiter.reset(id);
   await clearPending();
   await startSession(id);

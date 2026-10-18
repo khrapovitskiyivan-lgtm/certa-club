@@ -7,6 +7,8 @@ const SESSION = { name: "certa_session", ttl: 60 * 60 * 24 * 30 };
 const PENDING = { name: "certa_pending", ttl: 60 * 10 };
 // После перехода по ссылке из письма: почта подтверждена, ждём пароль.
 const LINKED = { name: "certa_linked", ttl: 60 * 10 };
+// После регистрации: доступ только к шагу верификации, не к клубу.
+const REGISTRATION = { name: "certa_reg", ttl: 60 * 60 * 24 };
 
 function secret(): string {
   const s = process.env.CERTA_SESSION_SECRET;
@@ -50,6 +52,9 @@ export const sessionMemberId = () => readToken(SESSION, "s");
 export const startPending = (memberId: string) => setToken(PENDING, "p", memberId);
 export const pendingMemberId = () => readToken(PENDING, "p");
 
+export const startRegistration = (memberId: string) => setToken(REGISTRATION, "r", memberId);
+export const registrationMemberId = () => readToken(REGISTRATION, "r");
+
 export const startLinked = (memberId: string) => setToken(LINKED, "l", memberId);
 export const linkedMemberId = () => readToken(LINKED, "l");
 
@@ -58,6 +63,7 @@ export async function endSession(): Promise<void> {
   c.delete(SESSION.name);
   c.delete(PENDING.name);
   c.delete(LINKED.name);
+  c.delete(REGISTRATION.name);
 }
 
 export async function clearPending(): Promise<void> {

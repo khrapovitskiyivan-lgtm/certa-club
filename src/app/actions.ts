@@ -9,7 +9,7 @@ import { validateVerification, type VerificationErrors } from "@/core/verificati
 import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter } from "@/server/auth";
 import { sendMail } from "@/server/mail";
 import { hashPassword } from "@/server/password";
-import { sessionMemberId, startSession } from "@/server/session";
+import { registrationMemberId, sessionMemberId, startRegistration } from "@/server/session";
 import { store } from "@/server/store";
 
 export type CodeState = { error?: string; notice?: string };
@@ -24,7 +24,8 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
   if (!raw.trim()) return { error: "Введите код приглашения или почту" };
   const entry = classifyEntry(raw);
   const now = Date.now();
-  if (!inviteGlobalLimiter.hit("all", now) || !inviteLimiter.hit(await clientIp(), now)) {
+  const ip = await clientIp();
+  if (!inviteGlobalLimiter.hit("all", now) || (ip && !inviteLimiter.hit(ip, now))) {
     return { error: "Слишком много попыток. Попробуйте позже" };
   }
   if (entry.kind === "invalid") return { error: "Проверьте код приглашения или почту" };
@@ -99,7 +100,8 @@ export async function register(code: string, _prev: RegisterState, formData: For
   );
   if (result === "unavailable") return { formError: "Приглашение уже использовано", values };
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
-  await startSession(memberId);
+  // Полную сессию даёт только вход с кодом с телефона; здесь пропуск только на шаг верификации.
+  await startRegistration(memberId);
   redirect("/verify");
 }
 
@@ -107,7 +109,7 @@ export type VerifyState = { errors?: VerificationErrors; formError?: string; val
 
 export async function submitVerification(_prev: VerifyState, formData: FormData): Promise<VerifyState> {
   const values = Object.fromEntries(formData) as Record<string, string>;
-  const id = await sessionMemberId();
+  const id = (await registrationMemberId()) ?? (await sessionMemberId());
   if (!id) return { formError: "Сессия истекла. Обратитесь к куратору клуба.", values };
 
   const v = validateVerification(values);

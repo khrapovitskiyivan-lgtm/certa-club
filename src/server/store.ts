@@ -23,6 +23,8 @@ export type Member = {
   role?: "member" | "council";
   // Секрет второго фактора (TOTP). Пусто, пока участник не настроил приложение.
   totpSecret?: string;
+  // Последний использованный шаг TOTP: защита от повтора кода.
+  totpLastStep?: number;
   activatedAt?: string;
   createdAt: string;
 };

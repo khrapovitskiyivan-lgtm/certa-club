@@ -56,15 +56,21 @@ export function totp(secret: string, nowMs: number): string {
 }
 
 // Допускаем соседний шаг в обе стороны: расхождение часов телефона и сервера.
-export function verifyTotp(secret: string, input: string, nowMs: number): boolean {
+// Возвращает номер совпавшего шага или null. Шаги не больше lastUsed отвергаются: код одноразовый.
+export function matchTotp(secret: string, input: string, nowMs: number, lastUsed = -1): number | null {
   const code = input.replace(/\s/g, "");
-  if (!/^\d{6}$/.test(code)) return false;
+  if (!/^\d{6}$/.test(code)) return null;
   const counter = Math.floor(nowMs / 1000 / STEP);
   for (const d of [-1, 0, 1]) {
-    const expected = Buffer.from(hotp(secret, counter + d));
-    if (timingSafeEqual(expected, Buffer.from(code))) return true;
+    const c = counter + d;
+    if (c <= lastUsed) continue;
+    if (timingSafeEqual(Buffer.from(hotp(secret, c)), Buffer.from(code))) return c;
   }
-  return false;
+  return null;
+}
+
+export function verifyTotp(secret: string, input: string, nowMs: number): boolean {
+  return matchTotp(secret, input, nowMs) !== null;
 }
 
 export function otpauthUri(secret: string, account: string): string {

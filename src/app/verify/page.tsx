@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { sessionMemberId } from "@/server/session";
+import { registrationMemberId, sessionMemberId } from "@/server/session";
 import { store } from "@/server/store";
 import { Steps } from "../invite/steps";
 import { VerifyForm } from "./verify-form";
@@ -23,7 +23,7 @@ export default function VerifyPage() {
 async function VerifyContent() {
   // Сессия и статус участника читаются только во время запроса.
   await connection();
-  const id = await sessionMemberId();
+  const id = (await registrationMemberId()) ?? (await sessionMemberId());
   const member = id ? await store.getMember(id) : undefined;
   if (!member) {
     return (
