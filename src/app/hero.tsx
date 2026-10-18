@@ -13,7 +13,7 @@ const LETTERS = "CERTA".split("");
 const SEEN_KEY = "certa.intro.seen";
 
 // Таймлайн интро в секундах; на повторном визите сжимается.
-const T = { line: 0, letters: 0.8, step: 0.2, letterDur: 2.2, invite: 4 };
+const T = { line: 0, letters: 0.8, step: 0.2, letterDur: 2.2, tagline: 3.6, invite: 4 };
 
 export function Hero() {
   const reduced = useReducedMotion();
@@ -79,7 +79,14 @@ export function Hero() {
               {ch}
             </motion.span>
           ))}
-          <span className={s.tagline}>Редкие вещи. Проверенные люди.</span>
+          <motion.span
+            className={s.tagline}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={at(T.tagline, 1.2)}
+          >
+            Редкие вещи. Проверенные люди.
+          </motion.span>
         </h1>
 
         <motion.div
