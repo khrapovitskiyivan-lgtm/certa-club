@@ -7,13 +7,18 @@ import path from "node:path";
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 
 async function sendViaProvider(to: string, subject: string, text: string): Promise<void> {
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text }),
-  });
-  // Ошибку пишем без содержимого письма: в нём может быть ссылка входа.
-  if (!res.ok) console.error(`[почта] не отправлено: ${res.status} ${await res.text()}`);
+  // Ошибки не пробрасываем и пишем без содержимого письма: в нём может быть ссылка входа.
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) console.error(`[почта] не отправлено: ${res.status}`);
+  } catch (e) {
+    console.error(`[почта] не отправлено: ${e instanceof Error ? e.name : "ошибка"}`);
+  }
 }
 
 export async function sendMail(to: string, subject: string, text: string): Promise<void> {

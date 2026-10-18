@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createLoginLink, classifyEntry, LINK_TTL_MIN } from "@/core/entry";
 import { checkInvite, hashCode, normalizeCode } from "@/core/invites";
 import { validateRegistration, type FieldErrors } from "@/core/registration";
@@ -36,10 +37,14 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
   }
 
   // Почта: ответ одинаковый всегда, письмо уходит только настоящему участнику.
+  // Поиск участника и отправка письма идут после ответа (after): время ответа не зависит
+  // от того, есть ли такая почта в клубе и как быстро отвечает почтовый сервис.
   if (emailLinkLimiter.hit(entry.email, now)) {
-    const m = await store.findByEmail(entry.email);
-    if (m) {
-      const { token, link } = createLoginLink(m.id, new Date(now));
+    const email = entry.email;
+    after(async () => {
+      const m = await store.findByEmail(email);
+      if (!m) return;
+      const { token, link } = createLoginLink(m.id, new Date());
       await store.addLoginLink(link);
       const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
       await sendMail(
@@ -54,7 +59,7 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
 ` +
           "Вход в Certa всегда начинается с главной страницы и вашей почты. Других ссылок на вход клуб не присылает.",
       );
-    }
+    });
   }
   const left = EMAIL_MIN_MS - (Date.now() - now);
   if (left > 0) await new Promise((r) => setTimeout(r, left));
