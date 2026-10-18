@@ -17,3 +17,4 @@ console.log(`Приглашение для: ${invite.inviteeName}`);
 console.log(`Код: ${code}`);
 console.log(`Ссылка: ${base}/invite/${code}`);
 console.log(`Действует до: ${invite.expiresAt}`);
+process.exit(0);

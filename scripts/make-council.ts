@@ -21,3 +21,4 @@ await store.updateMember(m.id, {
 });
 console.log(`${m.fullName} (${m.pseudonym}) теперь в экспертном совете.`);
 console.log("Вход: /login, при первом входе нужно подключить приложение-аутентификатор.");
+process.exit(0);
