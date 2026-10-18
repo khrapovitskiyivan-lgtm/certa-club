@@ -98,9 +98,7 @@ export async function passkeyRegistrationVerify(response: RegistrationResponseJS
   await sendMail(
     m.email,
     "Certa: добавлен ключ входа",
-    "К вашему аккаунту в Certa добавлен новый ключ входа (Face ID или отпечаток) на устройстве.
-
-" +
+    "К вашему аккаунту в Certa добавлен новый ключ входа (Face ID или отпечаток) на устройстве.\n\n" +
       "Если это были не вы, срочно свяжитесь с куратором клуба: ключ будет отозван.",
   );
   await clearPending();
