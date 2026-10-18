@@ -62,16 +62,20 @@
 .line {
   width: min(320px, 50vw);
   height: 1px;
-  background: var(--line);
+  background: var(--ink-2);
   margin-top: 28px;
   transform-origin: center;
-  transition: background-color 250ms var(--ease);
+  transition: opacity 250ms var(--ease);
 }
 
-/* Наведение на название проявляет и подпись, и линию под ним, как у «Вход по приглашению» */
-.name:hover + .line {
-  background: var(--ink);
-  transition: background-color 600ms var(--ease) 80ms;
+/* После заставки линия гаснет и появляется только вместе с подписью при наведении на название */
+.root[data-done] .line {
+  opacity: 0;
+}
+
+.root[data-done] .name:hover + .line {
+  opacity: 1;
+  transition: opacity 500ms var(--ease) 80ms;
 }
 
 .invite {
@@ -201,6 +205,9 @@
     opacity: 1;
     transform: translate(-50%, 0);
     transition: opacity 800ms var(--ease);
+  }
+  .root[data-done] .line {
+    opacity: 1;
   }
   .root[data-done] .inviteBtn {
     opacity: 0.85;
