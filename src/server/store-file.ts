@@ -168,7 +168,7 @@ export const fileStore: Store = {
     return exclusive(async () => {
       const d = await load();
       const inv = d.invites.find((i) => i.codeHash === codeHash);
-      if (!inv || inv.usedAt || new Date(inv.expiresAt) <= now) return "unavailable";
+      if (!inv || inv.usedAt || inv.revokedAt || new Date(inv.expiresAt) <= now) return "unavailable";
       if (d.members.some((m) => m.email === member.email)) return "email_taken";
       inv.usedAt = now.toISOString();
       d.members.push(member);

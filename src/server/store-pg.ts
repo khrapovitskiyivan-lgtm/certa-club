@@ -178,7 +178,7 @@ export const pgStore: Store = {
       // Блокируем строку приглашения: две одновременные регистрации по одному коду невозможны.
       const inv = await tx`select data from invites where code_hash = ${codeHash} for update`;
       const data = inv[0]?.data as Invite | undefined;
-      if (!data || data.usedAt || new Date(data.expiresAt) <= now) return "unavailable" as const;
+      if (!data || data.usedAt || data.revokedAt || new Date(data.expiresAt) <= now) return "unavailable" as const;
       const taken = await tx`select 1 from members where email = ${member.email}`;
       if (taken.length) return "email_taken" as const;
       await tx`update invites set data = data || ${tx.json({ usedAt: now.toISOString() })} where code_hash = ${codeHash}`;
