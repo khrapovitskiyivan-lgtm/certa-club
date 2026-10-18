@@ -20,6 +20,8 @@ export const registrationSchema = z
     city: z.string().trim().min(2, "Укажите город").max(80),
     occupation: z.string().trim().min(2, "Расскажите в одной строке").max(160),
     about: z.string().trim().max(500, "Не больше 500 знаков").optional().default(""),
+    password: z.string().min(8, "Не короче 8 символов").max(128),
+    passwordConfirm: z.string(),
     agreeRules: z.literal("on", { message: "Нужно согласие с правилами клуба" }),
   });
 
@@ -31,11 +33,14 @@ export function validateRegistration(raw: Record<string, unknown>):
   | { ok: true; data: RegistrationInput }
   | { ok: false; errors: FieldErrors } {
   const r = registrationSchema.safeParse(raw);
-  if (r.success) return { ok: true, data: r.data };
+  if (r.success && r.data.password === r.data.passwordConfirm) return { ok: true, data: r.data };
+  if (r.success) return { ok: false, errors: { passwordConfirm: "Пароли не совпадают" } };
   const errors: FieldErrors = {};
   for (const issue of r.error.issues) {
     const key = issue.path[0] as keyof RegistrationInput;
     if (key && !errors[key]) errors[key] = issue.message;
   }
+  // Несовпадение паролей показываем вместе с остальными ошибками.
+  if (!errors.passwordConfirm && raw.password !== raw.passwordConfirm) errors.passwordConfirm = "Пароли не совпадают";
   return { ok: false, errors };
 }

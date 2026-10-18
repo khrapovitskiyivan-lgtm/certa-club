@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { startAuthentication } from "@simplewebauthn/browser";
+import { enterCode, type CodeState } from "../actions";
 import { redeemLoginLink, type AuthState } from "../auth-actions";
 import { passkeyAuthenticationOptions, passkeyAuthenticationVerify } from "../passkey-actions";
 import s from "../invite/invite.module.css";
@@ -54,5 +55,39 @@ export function PasskeyLogin() {
         </p>
       )}
     </div>
+  );
+}
+
+// Вход по почте и паролю (та же логика, что в поле на главной).
+export function PasswordLogin() {
+  const [state, action, pending] = useActionState<CodeState, FormData>(enterCode, {});
+  return (
+    <form action={action} className={s.form} noValidate>
+      <div className={s.group}>
+        <div className={s.field}>
+          <label htmlFor="code" className={s.label}>
+            Почта
+          </label>
+          <input id="code" name="code" type="email" autoComplete="username" className={s.input} defaultValue={state.email ?? ""} />
+        </div>
+        <div className={s.field}>
+          <label htmlFor="password" className={s.label}>
+            Пароль
+          </label>
+          <input id="password" name="password" type="password" autoComplete="current-password" className={s.input} />
+        </div>
+      </div>
+      {(state.error || state.notice) && (
+        <p className={state.error ? s.formError : s.hint} role="status">
+          {state.error ?? state.notice}
+        </p>
+      )}
+      <button type="submit" className={s.submit} disabled={pending}>
+        {pending ? "Проверяем" : "Войти"}
+      </button>
+      <button type="submit" name="intent" value="link" className={s.backBtn} disabled={pending}>
+        Забыли пароль?
+      </button>
+    </form>
   );
 }

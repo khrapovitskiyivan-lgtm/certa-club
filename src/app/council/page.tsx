@@ -9,6 +9,8 @@ import { logout } from "../auth-actions";
 import { approveMember, deleteUnfinishedAction, revokeInviteAction } from "./actions";
 import { InviteForm } from "./invite-form";
 import { RoleSelect } from "./role-select";
+import { PasskeyOffer } from "../passkey/offer";
+import { SetPassword } from "../passkey/set-password";
 import s from "../invite/invite.module.css";
 import c from "./council.module.css";
 
@@ -57,7 +59,12 @@ async function CouncilContent() {
   const me = await currentCouncil();
   if (!me) redirect("/login");
 
-  const [members, invites, events] = await Promise.all([store.listMembers(), store.listInvites(), store.listEvents(200)]);
+  const [members, invites, events, keys] = await Promise.all([
+    store.listMembers(),
+    store.listInvites(),
+    store.listEvents(200),
+    store.listCredentials(me.id),
+  ]);
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
   const active = members.filter((m) => m.status === "active");
@@ -75,6 +82,8 @@ async function CouncilContent() {
           </form>
         </div>
       </header>
+      {!me.passwordHash && <SetPassword />}
+      {keys.length === 0 && <PasskeyOffer />}
 
       <section className={c.section}>
         <h2 className={c.h2}>

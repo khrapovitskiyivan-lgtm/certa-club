@@ -307,3 +307,27 @@
 .keyActions a.submit {
   display: inline-block;
 }
+
+.offer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  align-items: baseline;
+  padding: 14px 0;
+  margin: -6vh 0 6vh;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.offerBtn {
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}

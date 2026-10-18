@@ -1,4 +1,4 @@
-import { PasskeyLogin } from "./forms";
+import { PasskeyLogin, PasswordLogin } from "./forms";
 import s from "../invite/invite.module.css";
 
 export default function LoginPage() {
@@ -7,11 +7,11 @@ export default function LoginPage() {
       <div className={s.narrow}>
         <p className={s.mark}>Certa</p>
         <h1 className={s.title}>Вход для участников</h1>
-        <p className={s.lead}>Face ID, отпечаток пальца или код-пароль телефона, как удобнее.</p>
-        <PasskeyLogin />
-        <p className={s.hint} style={{ marginTop: 28 }}>
-          Новое устройство? На главной странице нажмите «Вход по приглашению» и введите свою почту.
+        <PasswordLogin />
+        <p className={s.hint} style={{ margin: "36px 0 14px" }}>
+          Если на этом устройстве включён вход по Face ID:
         </p>
+        <PasskeyLogin />
       </div>
     </main>
   );

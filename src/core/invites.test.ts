@@ -67,6 +67,8 @@ describe("форма регистрации", () => {
     phone: "+7 900 123-45-67",
     city: "Москва",
     occupation: "Собственник бизнеса",
+    password: "надёжный-пароль",
+    passwordConfirm: "надёжный-пароль",
     agreeRules: "on",
   };
 
@@ -83,6 +85,18 @@ describe("форма регистрации", () => {
   });
 
 
+
+  it("ловит несовпадение паролей", () => {
+    const r = validateRegistration({ ...valid, passwordConfirm: "другой-пароль" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.passwordConfirm).toBe("Пароли не совпадают");
+  });
+
+  it("пароль не короче 8 символов", () => {
+    const r = validateRegistration({ ...valid, password: "1234567", passwordConfirm: "1234567" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.password).toBeDefined();
+  });
 
   it("показывает все ошибки сразу", () => {
     const r = validateRegistration({ ...valid, agreeRules: undefined, city: "" });

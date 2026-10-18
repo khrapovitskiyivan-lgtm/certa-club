@@ -128,6 +128,9 @@ function CodeForm({ onClose }: { onClose: () => void }) {
   const [state, action, pending] = useActionState<CodeState, FormData>(enterCode, {});
   const ref = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  // Введена почта: показываем поле пароля и «Забыли пароль?».
+  const [value, setValue] = useState(state.email ?? "");
+  const isEmail = value.includes("@");
   useEffect(() => ref.current?.focus(), []);
 
   // Вход участника без ввода: если на устройстве есть ключ клуба, система сама предложит его
@@ -171,11 +174,35 @@ function CodeForm({ onClose }: { onClose: () => void }) {
         placeholder="Код приглашения или почта"
         autoComplete="username webauthn"
         spellCheck={false}
-
+        defaultValue={state.email ?? ""}
+        onChange={(e) => setValue(e.target.value)}
       />
-      <button type="submit" className={s.submit} disabled={pending} aria-label="Войти">
-        {pending ? "…" : "→"}
-      </button>
+      {!isEmail && (
+        <button type="submit" className={s.submit} disabled={pending} aria-label="Продолжить">
+          {pending ? "…" : "→"}
+        </button>
+      )}
+      {isEmail && (
+        <>
+          <label className={s.srOnly} htmlFor="password">
+            Пароль
+          </label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            className={`${s.input} ${s.password}`}
+            placeholder="Пароль"
+            autoComplete="current-password"
+          />
+          <button type="submit" className={s.submit} disabled={pending} aria-label="Войти">
+            {pending ? "…" : "→"}
+          </button>
+          <button type="submit" name="intent" value="link" className={s.forgot} disabled={pending}>
+            Забыли пароль?
+          </button>
+        </>
+      )}
       <p className={state.error ? s.error : s.notice} role="status" aria-live="polite">
         {state.error ?? state.notice ?? ""}
       </p>

@@ -7,13 +7,14 @@ import { createLoginLink, classifyEntry, LINK_TTL_MIN } from "@/core/entry";
 import { checkInvite, hashCode, normalizeCode } from "@/core/invites";
 import { validateRegistration, type FieldErrors } from "@/core/registration";
 import { validateVerification, type VerificationErrors } from "@/core/verification";
-import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter } from "@/server/auth";
+import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
 import { logEvent } from "@/server/events";
+import { hashPassword, verifyPassword } from "@/server/password";
 import { sendMail } from "@/server/mail";
-import { registrationMemberId, sessionMemberId, startRegistration } from "@/server/session";
+import { registrationMemberId, sessionMemberId, startSession } from "@/server/session";
 import { store } from "@/server/store";
 
-export type CodeState = { error?: string; notice?: string };
+export type CodeState = { error?: string; notice?: string; email?: string };
 
 const LINK_SENT = "Если вы участник клуба, ссылка для входа отправлена на вашу почту";
 // Минимальное время ответа на ввод почты: по задержке нельзя понять, есть ли такой участник.
@@ -37,7 +38,25 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
     redirect(`/invite/${entry.code}`);
   }
 
-  // Почта: ответ одинаковый всегда, письмо уходит только настоящему участнику.
+  // Почта и пароль: обычный вход. Ошибка одна и та же, есть такой участник или нет.
+  if (formData.get("intent") !== "link") {
+    const email = entry.email;
+    const password = String(formData.get("password") ?? "");
+    if (!password) return { error: "Введите пароль", email };
+    if (!loginLimiter.hit(email, now) || (ip && !loginIpLimiter.hit(ip, now))) {
+      return { error: "Слишком много попыток. Попробуйте через 15 минут", email };
+    }
+    const m = await store.findByEmail(email);
+    // Хеш проверяем всегда, чтобы время ответа не выдавало, существует ли почта.
+    const ok = await verifyPassword(password, m?.passwordHash ?? "scrypt$00$00");
+    if (!m || !ok) return { error: "Неверная почта или пароль", email };
+    loginLimiter.reset(email);
+    await logEvent("login", `Вход по паролю: ${m.pseudonym}`, m.id);
+    await startSession(m.id);
+    redirect(m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club");
+  }
+
+  // «Забыли пароль?»: ответ одинаковый всегда, письмо уходит только настоящему участнику.
   // Поиск участника и отправка письма идут после ответа (after): время ответа не зависит
   // от того, есть ли такая почта в клубе и как быстро отвечает почтовый сервис.
   if (emailLinkLimiter.hit(entry.email, now)) {
@@ -72,7 +91,10 @@ export type RegisterState = { errors?: FieldErrors; formError?: string; values?:
 
 export async function register(code: string, _prev: RegisterState, formData: FormData): Promise<RegisterState> {
   const raw = Object.fromEntries(formData) as Record<string, string>;
+  // Пароли не возвращаем в форму.
   const values = { ...raw };
+  delete values.password;
+  delete values.passwordConfirm;
 
   const now = new Date();
   const check = checkInvite(await store.listInvites(), code, now);
@@ -94,6 +116,7 @@ export async function register(code: string, _prev: RegisterState, formData: For
       city: d.city,
       occupation: d.occupation,
       about: d.about,
+      passwordHash: await hashPassword(d.password),
       invitedAs: check.invite.inviteeName,
       // Первый член совета входит сразу; проверку остальных проводит уже совет.
       status: check.invite.council ? "active" : "awaiting_kyc",
@@ -106,8 +129,9 @@ export async function register(code: string, _prev: RegisterState, formData: For
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
   // Следующий шаг: ключ входа (Face ID). Полная сессия появится только после него.
   await logEvent("registered", `Регистрация: ${d.pseudonym} по приглашению «${check.invite.inviteeName}»`, memberId);
-  await startRegistration(memberId);
-  redirect("/passkey");
+  // Пароль задан: это полноценный вход. Face ID предложим позже, в обычном браузере.
+  await startSession(memberId);
+  redirect(check.invite.council ? "/council" : "/verify");
 }
 
 export type VerifyState = { errors?: VerificationErrors; formError?: string; values?: Record<string, string> };

@@ -2,7 +2,10 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { currentMember } from "@/server/auth";
+import { store } from "@/server/store";
 import { logout } from "../auth-actions";
+import { PasskeyOffer } from "../passkey/offer";
+import { SetPassword } from "../passkey/set-password";
 import s from "../invite/invite.module.css";
 
 export default function ClubPage() {
@@ -23,9 +26,12 @@ async function ClubContent() {
   const m = await currentMember();
   if (!m) redirect("/login");
   if (m.status === "awaiting_kyc") redirect("/verify");
+  const hasKey = (await store.listCredentials(m.id)).length > 0;
 
   return (
     <>
+      {!m.passwordHash && <SetPassword />}
+      {!hasKey && <PasskeyOffer />}
       {m.status === "active" ? (
         <>
           <h1 className={s.title}>Добро пожаловать, {m.pseudonym}</h1>

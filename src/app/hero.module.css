@@ -158,6 +158,25 @@
   color: var(--danger);
 }
 
+.password {
+  grid-column: 1;
+  margin-top: 14px;
+}
+
+.forgot {
+  grid-column: 1 / -1;
+  justify-self: center;
+  margin-top: 14px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
 .notice {
   grid-column: 1 / -1;
   min-height: 20px;

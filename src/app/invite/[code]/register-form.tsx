@@ -106,6 +106,15 @@ export function RegisterForm({ code }: { code: string }) {
           state={state}
           hint="Под ним вас видят другие участники. Имя раскрывается только с вашего согласия."
         />
+        <Field
+          name="password"
+          label="Пароль"
+          type="password"
+          state={state}
+          autoComplete="new-password"
+          hint="Не короче 8 символов"
+        />
+        <Field name="passwordConfirm" label="Пароль ещё раз" type="password" state={state} autoComplete="new-password" />
       </fieldset>
 
       <div className={s.agree}>
