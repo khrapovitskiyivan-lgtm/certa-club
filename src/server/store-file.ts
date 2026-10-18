@@ -38,6 +38,19 @@ export const fileStore: Store = {
   async listInvites(): Promise<Invite[]> {
     return (await load()).invites;
   },
+  async isEmpty() {
+    const d = await load();
+    return d.invites.length === 0 && d.members.length === 0;
+  },
+  addFirstInvite(invite: Invite): Promise<boolean> {
+    return exclusive(async () => {
+      const d = await load();
+      if (d.invites.length || d.members.length) return false;
+      d.invites.push(invite);
+      await save(d);
+      return true;
+    });
+  },
   addInvite(invite: Invite): Promise<void> {
     return exclusive(async () => {
       const d = await load();

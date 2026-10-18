@@ -9,7 +9,7 @@ import { validateVerification, type VerificationErrors } from "@/core/verificati
 import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter } from "@/server/auth";
 import { sendMail } from "@/server/mail";
 import { hashPassword } from "@/server/password";
-import { registrationMemberId, sessionMemberId, startRegistration } from "@/server/session";
+import { registrationMemberId, sessionMemberId, startPending, startRegistration } from "@/server/session";
 import { store } from "@/server/store";
 
 export type CodeState = { error?: string; notice?: string };
@@ -93,14 +93,22 @@ export async function register(code: string, _prev: RegisterState, formData: For
       about: d.about,
       passwordHash: await hashPassword(d.password),
       invitedAs: check.invite.inviteeName,
-      status: "awaiting_kyc",
+      // Первый член совета входит сразу; проверку остальных проводит уже совет.
+      status: check.invite.council ? "active" : "awaiting_kyc",
+      ...(check.invite.council ? { role: "council" as const, activatedAt: now.toISOString() } : {}),
       createdAt: now.toISOString(),
     },
     now,
   );
   if (result === "unavailable") return { formError: "Приглашение уже использовано", values };
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
-  // Полную сессию даёт только вход с кодом с телефона; здесь пропуск только на шаг верификации.
+  // Полную сессию даёт только вход с кодом с телефона.
+  if (check.invite.council) {
+    // Совету сразу настраиваем второй фактор.
+    await startPending(memberId);
+    redirect("/login/setup");
+  }
+  // Остальным пропуск только на шаг верификации.
   await startRegistration(memberId);
   redirect("/verify");
 }

@@ -11,6 +11,8 @@ export type Invite = {
   codeHash: string;
   // Имя приглашённого, чтобы поприветствовать его на странице регистрации.
   inviteeName: string;
+  // Первичное приглашение: по нему регистрируется первый член экспертного совета.
+  council?: boolean;
   createdAt: string;
   expiresAt: string;
   usedAt?: string;

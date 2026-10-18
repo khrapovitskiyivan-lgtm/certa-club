@@ -42,6 +42,24 @@ export const pgStore: Store = {
     return rows.map((r) => r.data as Invite);
   },
 
+  async isEmpty() {
+    await schema();
+    const rows = await sql()`select (select count(*) from invites) + (select count(*) from members) as n`;
+    return Number(rows[0].n) === 0;
+  },
+
+  async addFirstInvite(invite) {
+    await schema();
+    return sql().begin(async (tx) => {
+      // Блокировка таблиц: два одновременных запроса не создадут два первичных приглашения.
+      await tx`lock table invites, members in exclusive mode`;
+      const rows = await tx`select (select count(*) from invites) + (select count(*) from members) as n`;
+      if (Number(rows[0].n) !== 0) return false;
+      await tx`insert into invites (code_hash, data) values (${invite.codeHash}, ${tx.json(invite as unknown as Json)})`;
+      return true;
+    });
+  },
+
   async addInvite(invite) {
     await schema();
     await sql()`insert into invites (code_hash, data) values (${invite.codeHash}, ${j(invite)})`;

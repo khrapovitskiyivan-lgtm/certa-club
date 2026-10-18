@@ -33,6 +33,10 @@ export type Verification =
 export type Store = {
   listInvites(): Promise<Invite[]>;
   addInvite(invite: Invite): Promise<void>;
+  // Пустая ли база: нет ни приглашений, ни участников (режим первичной настройки).
+  isEmpty(): Promise<boolean>;
+  // Атомарно добавляет первое приглашение, только если база пуста.
+  addFirstInvite(invite: Invite): Promise<boolean>;
   addLoginLink(link: LoginLink): Promise<void>;
   // Гасит ссылку и возвращает её; повторно по той же ссылке войти нельзя.
   consumeLoginLink(tokenHash: string, now: Date): Promise<LoginLink | undefined>;
