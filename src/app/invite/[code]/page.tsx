@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -5,6 +6,17 @@ import { checkInvite, normalizeCode } from "@/core/invites";
 import { store } from "@/server/store";
 import { Onboarding } from "./onboarding";
 import s from "../invite.module.css";
+
+// Карточка ссылки-приглашения в мессенджере. Имя приглашённого не показываем: превью видно всем в чате.
+export const metadata: Metadata = {
+  title: "Приглашение в Certa",
+  description: "Личное приглашение в закрытый клуб.",
+  openGraph: {
+    title: "Приглашение в Certa",
+    description: "Личное приглашение в закрытый клуб.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Certa" }],
+  },
+};
 
 export default function InvitePage({ params }: PageProps<"/invite/[code]">) {
   return (
