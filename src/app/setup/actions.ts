@@ -7,7 +7,7 @@ import { store } from "@/server/store";
 export type SetupState = { link?: string; error?: string };
 
 // Первичная настройка включается только секретом оператора CERTA_SETUP_TOKEN (без него маршрут выключен).
-export async function setupTokenValid(input: string): Promise<boolean> {
+async function setupTokenValid(input: string): Promise<boolean> {
   const t = process.env.CERTA_SETUP_TOKEN;
   if (!t) return false;
   const a = Buffer.from(input);
