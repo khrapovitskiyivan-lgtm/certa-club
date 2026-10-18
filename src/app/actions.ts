@@ -105,7 +105,7 @@ export async function register(code: string, _prev: RegisterState, formData: For
   if (result === "unavailable") return { formError: "Приглашение уже использовано", values };
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
   // Следующий шаг: ключ входа (Face ID). Полная сессия появится только после него.
-  await logEvent("registered", `Регистрация: ${d.pseudonym} (${d.fullName}) по приглашению «${check.invite.inviteeName}»`, memberId);
+  await logEvent("registered", `Регистрация: ${d.pseudonym} по приглашению «${check.invite.inviteeName}»`, memberId);
   await startRegistration(memberId);
   redirect("/passkey");
 }

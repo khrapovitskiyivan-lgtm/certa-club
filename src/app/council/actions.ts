@@ -52,7 +52,7 @@ export async function deleteUnfinishedAction(formData: FormData): Promise<void> 
   const id = String(formData.get("id") ?? "");
   const m = await store.getMember(id);
   if (m && (await store.deleteUnfinishedMember(id))) {
-    await logEvent("member_deleted", `Удалена незавершённая регистрация: ${m.pseudonym} (${m.fullName}) (${me.pseudonym})`);
+    await logEvent("member_deleted", `Удалена незавершённая регистрация: ${m.pseudonym} (${me.pseudonym})`);
   }
   revalidatePath("/council");
 }
