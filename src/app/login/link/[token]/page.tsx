@@ -9,7 +9,7 @@ export default function LinkPage() {
       <div className={s.narrow}>
         <p className={s.mark}>Certa</p>
         <h1 className={s.title}>Вход в клуб</h1>
-        <p className={s.lead}>Нажмите, чтобы продолжить. Затем пароль и код из приложения на телефоне.</p>
+        <p className={s.lead}>Нажмите, чтобы продолжить. Затем включите вход по Face ID на этом устройстве.</p>
         <Suspense fallback={null}>
           <LinkForm />
         </Suspense>

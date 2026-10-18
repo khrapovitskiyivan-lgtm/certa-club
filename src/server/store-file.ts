@@ -3,9 +3,9 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { Member, Store, Verification } from "./store-types";
+import type { Credential, Member, Store, Verification } from "./store-types";
 
-type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[] };
+type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[] };
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 const FILE = path.join(DATA_DIR, "store.json");
@@ -35,6 +35,27 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 export const fileStore: Store = {
+  addCredential(c) {
+    return exclusive(async () => {
+      const d = await load();
+      (d.credentials ??= []).push(c);
+      await save(d);
+    });
+  },
+  async getCredential(id) {
+    return (await load()).credentials?.find((c) => c.id === id);
+  },
+  async listCredentials(memberId) {
+    return ((await load()).credentials ?? []).filter((c) => c.memberId === memberId);
+  },
+  updateCredentialCounter(id, counter) {
+    return exclusive(async () => {
+      const d = await load();
+      const c = d.credentials?.find((x) => x.id === id);
+      if (c) c.counter = counter;
+      await save(d);
+    });
+  },
   async listInvites(): Promise<Invite[]> {
     return (await load()).invites;
   },
@@ -88,17 +109,6 @@ export const fileStore: Store = {
   },
   async listMembers(): Promise<Member[]> {
     return (await load()).members;
-  },
-  // Атомарно отмечает шаг TOTP использованным; false, если этот или более поздний шаг уже был.
-  consumeTotpStep(id: string, step: number): Promise<boolean> {
-    return exclusive(async () => {
-      const d = await load();
-      const m = d.members.find((x) => x.id === id);
-      if (!m || step <= (m.totpLastStep ?? -1)) return false;
-      m.totpLastStep = step;
-      await save(d);
-      return true;
-    });
   },
   // Частичное обновление участника одной операцией.
   updateMember(id: string, patch: Partial<Omit<Member, "id">>): Promise<boolean> {

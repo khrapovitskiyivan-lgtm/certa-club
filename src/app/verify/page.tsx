@@ -37,7 +37,7 @@ async function VerifyContent() {
 
   return (
     <>
-      <Steps current={2} />
+      <Steps current={3} />
       <h1 className={s.title}>Верификация</h1>
       <p className={s.lead}>
         Клуб работает по стандартам частного банковского обслуживания: каждый участник подтверждает личность

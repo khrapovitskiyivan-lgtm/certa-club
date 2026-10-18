@@ -65,6 +65,13 @@
   background: var(--line);
   margin-top: 28px;
   transform-origin: center;
+  transition: background-color 250ms var(--ease);
+}
+
+/* Наведение на название проявляет и подпись, и линию под ним, как у «Вход по приглашению» */
+.name:hover + .line {
+  background: var(--ink);
+  transition: background-color 600ms var(--ease) 80ms;
 }
 
 .invite {

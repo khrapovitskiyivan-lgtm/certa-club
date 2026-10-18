@@ -1,4 +1,4 @@
-import { LoginForm } from "./forms";
+import { PasskeyLogin } from "./forms";
 import s from "../invite/invite.module.css";
 
 export default function LoginPage() {
@@ -7,8 +7,11 @@ export default function LoginPage() {
       <div className={s.narrow}>
         <p className={s.mark}>Certa</p>
         <h1 className={s.title}>Вход для участников</h1>
-        <p className={s.lead}>Почта и пароль, указанные при вступлении. Затем код из приложения на телефоне.</p>
-        <LoginForm />
+        <p className={s.lead}>Касанием или взглядом: Face ID, Touch ID или отпечаток пальца.</p>
+        <PasskeyLogin />
+        <p className={s.hint} style={{ marginTop: 28 }}>
+          Новое устройство? На главной странице нажмите «Вход по приглашению» и введите свою почту.
+        </p>
       </div>
     </main>
   );

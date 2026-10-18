@@ -62,8 +62,6 @@ describe("форма регистрации", () => {
     phone: "+7 900 123-45-67",
     city: "Москва",
     occupation: "Собственник бизнеса",
-    password: "очень-длинный-пароль",
-    passwordConfirm: "очень-длинный-пароль",
     agreeRules: "on",
   };
 
@@ -79,24 +77,14 @@ describe("форма регистрации", () => {
     if (!r.ok) expect(r.errors.agreeRules).toBeDefined();
   });
 
-  it("ловит несовпадение паролей", () => {
-    const r = validateRegistration({ ...valid, passwordConfirm: "другой-пароль-123" });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.passwordConfirm).toBe("Пароли не совпадают");
-  });
 
-  it("показывает все ошибки сразу, включая несовпадение паролей", () => {
-    const r = validateRegistration({ ...valid, agreeRules: undefined, passwordConfirm: "другой-пароль-123" });
+
+  it("показывает все ошибки сразу", () => {
+    const r = validateRegistration({ ...valid, agreeRules: undefined, city: "" });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.errors.agreeRules).toBeDefined();
-      expect(r.errors.passwordConfirm).toBe("Пароли не совпадают");
+      expect(r.errors.city).toBeDefined();
     }
-  });
-
-  it("короткий пароль", () => {
-    const r = validateRegistration({ ...valid, password: "short", passwordConfirm: "short" });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.password).toBeDefined();
   });
 });

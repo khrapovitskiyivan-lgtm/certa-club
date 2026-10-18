@@ -20,13 +20,7 @@ export const registrationSchema = z
     city: z.string().trim().min(2, "Укажите город").max(80),
     occupation: z.string().trim().min(2, "Расскажите в одной строке").max(160),
     about: z.string().trim().max(500, "Не больше 500 знаков").optional().default(""),
-    password: z.string().min(8, "Не короче 8 символов").max(128),
-    passwordConfirm: z.string(),
     agreeRules: z.literal("on", { message: "Нужно согласие с правилами клуба" }),
-  })
-  .refine((d) => d.password === d.passwordConfirm, {
-    path: ["passwordConfirm"],
-    message: "Пароли не совпадают",
   });
 
 export type RegistrationInput = z.infer<typeof registrationSchema>;
@@ -42,10 +36,6 @@ export function validateRegistration(raw: Record<string, unknown>):
   for (const issue of r.error.issues) {
     const key = issue.path[0] as keyof RegistrationInput;
     if (key && !errors[key]) errors[key] = issue.message;
-  }
-  // refine не срабатывает при других ошибках, а показать все ошибки нужно сразу.
-  if (!errors.passwordConfirm && raw.password !== raw.passwordConfirm) {
-    errors.passwordConfirm = "Пароли не совпадают";
   }
   return { ok: false, errors };
 }

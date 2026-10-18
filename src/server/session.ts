@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 const SESSION = { name: "certa_session", ttl: 60 * 60 * 24 * 30 };
 const PENDING = { name: "certa_pending", ttl: 60 * 10 };
-// После перехода по ссылке из письма: почта подтверждена, ждём пароль.
+// После перехода по ссылке из письма: почта подтверждена, ждём создания ключа на устройстве.
 const LINKED = { name: "certa_linked", ttl: 60 * 10 };
 // После регистрации: доступ только к шагу верификации, не к клубу.
 const REGISTRATION = { name: "certa_reg", ttl: 60 * 60 * 24 };
@@ -70,4 +70,35 @@ export async function clearPending(): Promise<void> {
   const c = await cookies();
   c.delete(PENDING.name);
   c.delete(LINKED.name);
+}
+
+// Челлендж WebAuthn между запросом параметров и ответом устройства: подписанная короткая cookie.
+const CHALLENGE = { name: "certa_wa", ttl: 60 * 5 };
+type ChallengeData = { purpose: "reg" | "auth"; memberId?: string; challenge: string };
+
+export async function setChallenge(data: ChallengeData): Promise<void> {
+  const payload = Buffer.from(JSON.stringify({ ...data, exp: Math.floor(Date.now() / 1000) + CHALLENGE.ttl })).toString("base64url");
+  (await cookies()).set(CHALLENGE.name, `${payload}.${sign(payload)}`, {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: CHALLENGE.ttl,
+  });
+}
+
+// Читает и сразу удаляет: челлендж одноразовый.
+export async function takeChallenge(purpose: ChallengeData["purpose"]): Promise<ChallengeData | null> {
+  const c = await cookies();
+  const raw = c.get(CHALLENGE.name)?.value;
+  c.delete(CHALLENGE.name);
+  if (!raw) return null;
+  const i = raw.lastIndexOf(".");
+  const payload = raw.slice(0, i);
+  const sig = Buffer.from(raw.slice(i + 1));
+  const expected = Buffer.from(sign(payload));
+  if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null;
+  const d = JSON.parse(Buffer.from(payload, "base64url").toString()) as ChallengeData & { exp: number };
+  if (d.purpose !== purpose || d.exp < Date.now() / 1000) return null;
+  return d;
 }

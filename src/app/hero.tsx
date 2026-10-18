@@ -2,6 +2,9 @@
 
 import { Fragment, useActionState, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useRouter } from "next/navigation";
+import { browserSupportsWebAuthnAutofill, startAuthentication } from "@simplewebauthn/browser";
+import { passkeyAuthenticationOptions, passkeyAuthenticationVerify } from "./passkey-actions";
 import { enterCode, type CodeState } from "./actions";
 import s from "./hero.module.css";
 
@@ -117,7 +120,28 @@ export function Hero() {
 function CodeForm({ onClose }: { onClose: () => void }) {
   const [state, action, pending] = useActionState<CodeState, FormData>(enterCode, {});
   const ref = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   useEffect(() => ref.current?.focus(), []);
+
+  // Вход участника без ввода: если на устройстве есть ключ клуба, система сама предложит его
+  // в подсказках поля. Постороннему ничего не показывается.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (!(await browserSupportsWebAuthnAutofill())) return;
+      try {
+        const options = await passkeyAuthenticationOptions();
+        const response = await startAuthentication({ optionsJSON: options, useBrowserAutofill: true });
+        const r = await passkeyAuthenticationVerify(response);
+        if (active && r.ok) router.push(r.next);
+      } catch {
+        // Пользователь не выбрал ключ или ввёл код приглашения: ничего не делаем.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [router]);
 
   return (
     <motion.form
@@ -138,7 +162,7 @@ function CodeForm({ onClose }: { onClose: () => void }) {
         name="code"
         className={s.input}
         placeholder="Код приглашения или почта"
-        autoComplete="off"
+        autoComplete="username webauthn"
         spellCheck={false}
 
       />

@@ -3,7 +3,7 @@
 import postgres from "postgres";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
-import type { Member, Store } from "./store-types";
+import type { Credential, Member, Store } from "./store-types";
 
 let client: postgres.Sql | null = null;
 let ready: Promise<void> | null = null;
@@ -25,6 +25,7 @@ function schema(): Promise<void> {
     const db = sql();
     await db`create table if not exists invites (code_hash text primary key, data jsonb not null)`;
     await db`create table if not exists members (id text primary key, email text unique not null, data jsonb not null)`;
+    await db`create table if not exists credentials (id text primary key, member_id text not null, data jsonb not null)`;
     await db`create table if not exists login_links (
       token_hash text primary key, member_id text not null,
       expires_at timestamptz not null, used_at timestamptz)`;
@@ -36,6 +37,28 @@ type Json = Parameters<postgres.Sql["json"]>[0];
 const j = (v: unknown) => sql().json(v as Json);
 
 export const pgStore: Store = {
+  async addCredential(c) {
+    await schema();
+    await sql()`insert into credentials (id, member_id, data) values (${c.id}, ${c.memberId}, ${j(c)})`;
+  },
+
+  async getCredential(id) {
+    await schema();
+    const rows = await sql()`select data from credentials where id = ${id}`;
+    return rows[0]?.data as Credential | undefined;
+  },
+
+  async listCredentials(memberId) {
+    await schema();
+    const rows = await sql()`select data from credentials where member_id = ${memberId}`;
+    return rows.map((r) => r.data as Credential);
+  },
+
+  async updateCredentialCounter(id, counter) {
+    await schema();
+    await sql()`update credentials set data = data || jsonb_build_object('counter', ${counter}::int) where id = ${id}`;
+  },
+
   async listInvites() {
     await schema();
     const rows = await sql()`select data from invites order by data->>'createdAt'`;
@@ -105,13 +128,6 @@ export const pgStore: Store = {
     return rows.map((r) => r.data as Member);
   },
 
-  async consumeTotpStep(id, step) {
-    await schema();
-    const rows = await sql()`update members set data = data || jsonb_build_object('totpLastStep', ${step}::int)
-      where id = ${id} and coalesce((data->>'totpLastStep')::int, -1) < ${step}
-      returning id`;
-    return rows.length > 0;
-  },
 
   async updateMember(id, patch) {
     await schema();

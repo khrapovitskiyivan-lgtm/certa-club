@@ -8,8 +8,7 @@ import { validateRegistration, type FieldErrors } from "@/core/registration";
 import { validateVerification, type VerificationErrors } from "@/core/verification";
 import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter } from "@/server/auth";
 import { sendMail } from "@/server/mail";
-import { hashPassword } from "@/server/password";
-import { registrationMemberId, sessionMemberId, startPending, startRegistration } from "@/server/session";
+import { registrationMemberId, sessionMemberId, startRegistration } from "@/server/session";
 import { store } from "@/server/store";
 
 export type CodeState = { error?: string; notice?: string };
@@ -66,10 +65,7 @@ export type RegisterState = { errors?: FieldErrors; formError?: string; values?:
 
 export async function register(code: string, _prev: RegisterState, formData: FormData): Promise<RegisterState> {
   const raw = Object.fromEntries(formData) as Record<string, string>;
-  // Пароли не возвращаем в форму.
   const values = { ...raw };
-  delete values.password;
-  delete values.passwordConfirm;
 
   const now = new Date();
   const check = checkInvite(await store.listInvites(), code, now);
@@ -91,7 +87,6 @@ export async function register(code: string, _prev: RegisterState, formData: For
       city: d.city,
       occupation: d.occupation,
       about: d.about,
-      passwordHash: await hashPassword(d.password),
       invitedAs: check.invite.inviteeName,
       // Первый член совета входит сразу; проверку остальных проводит уже совет.
       status: check.invite.council ? "active" : "awaiting_kyc",
@@ -102,15 +97,9 @@ export async function register(code: string, _prev: RegisterState, formData: For
   );
   if (result === "unavailable") return { formError: "Приглашение уже использовано", values };
   if (result === "email_taken") return { errors: { email: "Этот адрес уже зарегистрирован" }, values };
-  // Полную сессию даёт только вход с кодом с телефона.
-  if (check.invite.council) {
-    // Совету сразу настраиваем второй фактор.
-    await startPending(memberId);
-    redirect("/login/setup");
-  }
-  // Остальным пропуск только на шаг верификации.
+  // Следующий шаг: ключ входа (Face ID). Полная сессия появится только после него.
   await startRegistration(memberId);
-  redirect("/verify");
+  redirect("/passkey");
 }
 
 export type VerifyState = { errors?: VerificationErrors; formError?: string; values?: Record<string, string> };

@@ -4,10 +4,6 @@ import { sessionMemberId } from "./session";
 import { store, type Member } from "./store";
 
 // Лимиты в памяти процесса: достаточно для одного сервера, при масштабировании вынести в хранилище.
-// Вход ограничен по почте (нельзя обойти сменой адреса) и отдельно по адресу клиента.
-export const loginLimiter = createLimiter(5, 15 * 60 * 1000);
-export const loginIpLimiter = createLimiter(30, 15 * 60 * 1000);
-export const codeLimiter = createLimiter(5, 15 * 60 * 1000);
 export const inviteLimiter = createLimiter(10, 15 * 60 * 1000);
 // Общий потолок на ввод кодов приглашения со всех адресов вместе.
 // Письма со ссылкой входа: не больше трёх на почту за 15 минут.
@@ -32,5 +28,6 @@ export async function currentMember(): Promise<Member | null> {
 // Проверка прав совета: вызывать в каждом действии и странице совета.
 export async function currentCouncil(): Promise<Member | null> {
   const m = await currentMember();
-  return m?.role === "council" && m.totpSecret ? m : null;
+  // Сессию даёт только вход по ключу (passkey), поэтому роли достаточно.
+  return m?.role === "council" ? m : null;
 }

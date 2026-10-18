@@ -3,6 +3,6 @@ import { fileStore } from "./store-file.ts";
 import { pgStore } from "./store-pg.ts";
 import type { Store } from "./store-types.ts";
 
-export type { Member, Store, Verification } from "./store-types.ts";
+export type { Credential, Member, Store, Verification } from "./store-types.ts";
 
 export const store: Store = process.env.DATABASE_URL ? pgStore : fileStore;

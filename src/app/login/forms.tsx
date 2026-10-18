@@ -1,99 +1,22 @@
 "use client";
 
-import { useActionState } from "react";
-import { useParams } from "next/navigation";
-import { confirmSetup, login, loginWithLink, redeemLoginLink, verifyCode, type AuthState } from "../auth-actions";
+import { useActionState, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { startAuthentication } from "@simplewebauthn/browser";
+import { redeemLoginLink, type AuthState } from "../auth-actions";
+import { passkeyAuthenticationOptions, passkeyAuthenticationVerify } from "../passkey-actions";
 import s from "../invite/invite.module.css";
-
-function FormError({ state }: { state: AuthState }) {
-  return state.error ? (
-    <p className={s.formError} role="alert">
-      {state.error}
-    </p>
-  ) : null;
-}
-
-export function LoginForm() {
-  const [state, action, pending] = useActionState<AuthState, FormData>(login, {});
-  return (
-    <form action={action} className={s.form} noValidate>
-      <div className={s.group}>
-        <div className={s.field}>
-          <label htmlFor="email" className={s.label}>
-            Почта
-          </label>
-          <input id="email" name="email" type="email" autoComplete="username" className={s.input} defaultValue={state.email ?? ""} />
-        </div>
-        <div className={s.field}>
-          <label htmlFor="password" className={s.label}>
-            Пароль
-          </label>
-          <input id="password" name="password" type="password" autoComplete="current-password" className={s.input} />
-        </div>
-      </div>
-      <FormError state={state} />
-      <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Проверяем" : "Войти"}
-      </button>
-    </form>
-  );
-}
-
-function CodeField() {
-  return (
-    <div className={s.field}>
-      <label htmlFor="code" className={s.label}>
-        Код из приложения
-      </label>
-      <input
-        id="code"
-        name="code"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9 ]*"
-        maxLength={7}
-        className={`${s.input} ${s.codeInput}`}
-        autoFocus
-       
-      />
-    </div>
-  );
-}
-
-export function CodeForm() {
-  const [state, action, pending] = useActionState<AuthState, FormData>(verifyCode, {});
-  return (
-    <form action={action} className={s.form} noValidate>
-      <CodeField />
-      <FormError state={state} />
-      <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Проверяем" : "Подтвердить"}
-      </button>
-    </form>
-  );
-}
-
-export function SetupForm({ secret, sig }: { secret: string; sig: string }) {
-  const [state, action, pending] = useActionState<AuthState, FormData>(confirmSetup, {});
-  return (
-    <form action={action} className={s.form} noValidate>
-      <input type="hidden" name="secret" value={secret} />
-      <input type="hidden" name="sig" value={sig} />
-      <CodeField />
-      <FormError state={state} />
-      <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Проверяем" : "Подключить и войти"}
-      </button>
-    </form>
-  );
-}
 
 export function LinkForm() {
   const { token } = useParams<{ token: string }>();
   const [state, action, pending] = useActionState<AuthState, FormData>(() => redeemLoginLink(token), {});
   return (
-    <form action={action} className={s.form} noValidate>
-      <FormError state={state} />
+    <form action={action} className={s.form}>
+      {state.error && (
+        <p className={s.formError} role="alert">
+          {state.error}
+        </p>
+      )}
       <button type="submit" className={s.submit} disabled={pending}>
         {pending ? "Проверяем" : "Продолжить вход"}
       </button>
@@ -101,20 +24,35 @@ export function LinkForm() {
   );
 }
 
-export function PasswordForm() {
-  const [state, action, pending] = useActionState<AuthState, FormData>(loginWithLink, {});
+// Явный вход по Face ID (страница /login, например из закладки).
+export function PasskeyLogin() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function login() {
+    setBusy(true);
+    setError(null);
+    try {
+      const response = await startAuthentication({ optionsJSON: await passkeyAuthenticationOptions() });
+      const r = await passkeyAuthenticationVerify(response);
+      if (r.ok) router.push(r.next);
+      else setError(r.error);
+    } catch {
+      setError("Вход не подтверждён. Если на этом устройстве нет ключа клуба, введите почту на главной");
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
-    <form action={action} className={s.form} noValidate>
-      <div className={s.field}>
-        <label htmlFor="password" className={s.label}>
-          Пароль
-        </label>
-        <input id="password" name="password" type="password" autoComplete="current-password" className={s.input} autoFocus />
-      </div>
-      <FormError state={state} />
-      <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Проверяем" : "Войти"}
+    <div className={s.form}>
+      <button type="button" className={s.submit} onClick={login} disabled={busy}>
+        {busy ? "Ждём подтверждения" : "Войти по Face ID"}
       </button>
-    </form>
+      {error && (
+        <p className={s.formError} role="alert">
+          {error}
+        </p>
+      )}
+    </div>
   );
 }

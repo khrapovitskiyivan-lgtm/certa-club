@@ -11,17 +11,14 @@ export type Member = {
   city: string;
   occupation: string;
   about: string;
-  passwordHash: string;
+  // Устаревшее: вход по паролю заменён на passkey; поле остаётся у ранних записей.
+  passwordHash?: string;
   invitedAs: string;
   // KYC проходит сразу после анкеты; доступ к клубу после подтверждения советом.
   status: "awaiting_kyc" | "kyc_submitted" | "active";
   verification?: Verification;
   // Роль в клубе: совет подтверждает участников и выдаёт приглашения.
   role?: "member" | "council";
-  // Секрет второго фактора (TOTP). Пусто, пока участник не настроил приложение.
-  totpSecret?: string;
-  // Последний использованный шаг TOTP: защита от повтора кода.
-  totpLastStep?: number;
   activatedAt?: string;
   createdAt: string;
 };
@@ -30,7 +27,23 @@ export type Verification =
   | { method: "self"; submittedAt: string }
   | { method: "agent"; agentType: string; agentName: string; agentContact: string; submittedAt: string };
 
+// Ключ входа (passkey): публичный ключ устройства участника. Секрет остаётся на устройстве.
+export type Credential = {
+  id: string; // base64url
+  memberId: string;
+  publicKey: string; // base64url
+  counter: number;
+  transports?: string[];
+  deviceType?: string;
+  backedUp?: boolean;
+  createdAt: string;
+};
+
 export type Store = {
+  addCredential(c: Credential): Promise<void>;
+  getCredential(id: string): Promise<Credential | undefined>;
+  listCredentials(memberId: string): Promise<Credential[]>;
+  updateCredentialCounter(id: string, counter: number): Promise<void>;
   listInvites(): Promise<Invite[]>;
   addInvite(invite: Invite): Promise<void>;
   // Пустая ли база: нет ни приглашений, ни участников (режим первичной настройки).
@@ -43,8 +56,6 @@ export type Store = {
   getMember(id: string): Promise<Member | undefined>;
   findByEmail(email: string): Promise<Member | undefined>;
   listMembers(): Promise<Member[]>;
-  // Атомарно отмечает шаг TOTP использованным; false, если этот или более поздний шаг уже был.
-  consumeTotpStep(id: string, step: number): Promise<boolean>;
   updateMember(id: string, patch: Partial<Omit<Member, "id">>): Promise<boolean>;
   submitVerification(id: string, v: Verification): Promise<boolean>;
   // Помечает приглашение использованным и создаёт участника одной операцией.
