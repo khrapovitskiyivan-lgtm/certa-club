@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { CATEGORIES, CURRENCIES, type Listing } from "@/core/listing";
 import { CITY_SUGGESTIONS } from "@/core/phone";
 import { createListing, type ListingFormState } from "../actions";
+import { LotFiles } from "./lot-files";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
 
@@ -128,6 +129,8 @@ export function ListingForm({ kind }: { kind: Listing["kind"] }) {
           <p className={s.hint}>Только страна и город, без точного адреса.</p>
           {err("city")}
         </div>
+
+        {isOffer && <LotFiles />}
 
         {isOffer && (
           <label className={c.check}>

@@ -7,6 +7,7 @@ import { validateOffer, validateRequest, visibleTo, type FieldErrors, type Listi
 import { currentMember } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { store, type Member } from "@/server/store";
+import { cleanName, fileUrl, ownKeys } from "@/core/upload";
 
 // Витрина доступна только подтверждённым участникам.
 async function activeMember(): Promise<Member | null> {
@@ -50,6 +51,13 @@ export async function createListing(
       country: d.country,
       city: d.city,
     };
+    // Файлы: только свои ключи; имя документа приходит рядом с ключом через «|».
+    const photos = ownKeys(formData.getAll("photo"), m.id, "photo").map(fileUrl);
+    const docPairs = formData.getAll("doc").map((r) => String(r).split("|"));
+    const docKeys = ownKeys(docPairs.map((d) => d[0]), m.id, "doc");
+    const docs = docKeys.map((k) => ({ key: k, name: cleanName(docPairs.find((d) => d[0] === k)?.slice(1).join("|")) }));
+    if (photos.length) listing.photos = photos;
+    if (docs.length) listing.docs = docs;
   } else {
     const v = validateRequest(values);
     if (!v.ok) return { errors: v.errors, values };

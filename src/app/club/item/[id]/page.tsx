@@ -7,6 +7,8 @@ import { store } from "@/server/store";
 import { withdrawListing } from "../../actions";
 import { ClubHeader } from "../../club-header";
 import { InquiryForm } from "./inquiry-form";
+import { Gallery } from "./gallery";
+import { fileUrl } from "@/core/upload";
 import { VerifyNotice } from "../../verify-notice";
 import s from "../../../invite/invite.module.css";
 import c from "../../club.module.css";
@@ -44,10 +46,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           {isOffer ? "Предложение" : "Ищут в клубе"} · {CATEGORIES[l.category]}
         </span>
         <h1 className={c.itemTitle}>{l.title}</h1>
-        {l.photos?.map((src) => (
-          // eslint-disable-next-line @next/next/no-img-element -- статичные SVG, оптимизация не нужна
-          <img key={src} src={src} alt={l.title} className={c.photoLarge} />
-        ))}
+        {l.photos && l.photos.length > 0 && <Gallery photos={l.photos} alt={l.title} />}
         {l.demo && <span className={c.badge}>Тестовый лот</span>}
         {l.quiet && <span className={c.badge}>Тихий лот: виден только вам и совету</span>}
         {l.status !== "active" && <span className={c.badge}>Снято</span>}
@@ -73,6 +72,19 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <dt>Размещено</dt>
           <dd>{fmt(l.createdAt)}</dd>
         </dl>
+
+        {(mine || isCouncil) && l.docs && l.docs.length > 0 && (
+          <div>
+            <p className={c.cardCat}>Документы (видят автор и совет)</p>
+            {l.docs.map((d) => (
+              <div key={d.key} className={c.docRow}>
+                <a href={fileUrl(d.key)} style={{ textDecoration: "underline" }}>
+                  {d.name}
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
 
         {l.status === "active" && !mine && (me.status === "active" ? <InquiryForm id={l.id} kind={l.kind} /> : <VerifyNotice me={me} action="откликнуться" next={`/club/item/${l.id}`} />)}
 
