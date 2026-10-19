@@ -182,19 +182,21 @@ function CodeForm({ onClose }: { onClose: () => void }) {
           {pending ? "…" : "→"}
         </button>
       )}
+      {/* Поле пароля в DOM всегда: менеджер паролей заполняет пару почта+пароль сразу, до ввода «@» оно скрыто визуально */}
+      <label className={s.srOnly} htmlFor="password">
+        Пароль
+      </label>
+      <input
+        id="password"
+        name="password"
+        type="password"
+        className={isEmail ? `${s.input} ${s.password}` : s.srOnly}
+        tabIndex={isEmail ? undefined : -1}
+        placeholder="Пароль"
+        autoComplete="current-password"
+      />
       {isEmail && (
         <>
-          <label className={s.srOnly} htmlFor="password">
-            Пароль
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            className={`${s.input} ${s.password}`}
-            placeholder="Пароль"
-            autoComplete="current-password"
-          />
           <button type="submit" className={s.submit} disabled={pending} aria-label="Войти">
             {pending ? "…" : "→"}
           </button>

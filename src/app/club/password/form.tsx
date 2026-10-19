@@ -4,11 +4,13 @@ import { useActionState } from "react";
 import { setPasswordAction, type SetPasswordState } from "../../auth-actions";
 import s from "../../invite/invite.module.css";
 
-export function ChangePasswordForm({ hasPassword }: { hasPassword: boolean }) {
+export function ChangePasswordForm({ hasPassword, email }: { hasPassword: boolean; email: string }) {
   const [state, action, pending] = useActionState<SetPasswordState, FormData>(setPasswordAction, {});
   if (state.done) return <p className={s.lead}>Пароль сохранён. Теперь входите по почте и этому паролю на любом устройстве.</p>;
   return (
     <form action={action} className={s.form} noValidate>
+      {/* Логин для менеджера паролей: без него новый пароль не привязать к учётной записи */}
+      <input type="email" name="username" autoComplete="username" value={email} readOnly hidden />
       <div className={s.group}>
         {hasPassword && (
           <div className={s.field}>

@@ -80,7 +80,7 @@ export function RegisterForm({ code }: { code: string }) {
       <fieldset className={s.group}>
         <legend className={s.legend}>О вас</legend>
         <Field name="fullName" label="Имя и фамилия" state={state} autoComplete="name" />
-        <Field name="email" label="Почта" type="email" state={state} autoComplete="email" />
+        <Field name="email" label="Почта" type="email" state={state} autoComplete="username" />
         <PhoneField state={state} />
         <Field name="city" label="Город" state={state} autoComplete="address-level2" list="city-list" hint="Начните вводить, появятся подсказки" />
         <datalist id="city-list">

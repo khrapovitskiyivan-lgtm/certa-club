@@ -27,7 +27,7 @@ async function Content() {
       <AppHeader me={me} area={me.role === "council" ? "council" : "club"} />
       <h1 className={s.title}>Пароль</h1>
       <p className={s.lead}>Новый пароль для входа по почте ({me.email}).</p>
-      <ChangePasswordForm hasPassword={Boolean(me.passwordHash)} />
+      <ChangePasswordForm hasPassword={Boolean(me.passwordHash)} email={me.email} />
     </>
   );
 }

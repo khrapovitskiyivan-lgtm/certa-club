@@ -83,7 +83,7 @@ async function CouncilContent() {
   return (
     <>
       <AppHeader me={me} area="council" />
-      {!me.passwordHash && <SetPassword />}
+      {!me.passwordHash && <SetPassword email={me.email} />}
       {keys.length === 0 && <PasskeyOffer />}
 
       <section className={c.section}>
@@ -195,9 +195,9 @@ async function CouncilContent() {
 
       <section className={c.section}>
         <h2 className={c.h2}>
-          Не завершили вступление <span className={c.count}>{waitingKyc.length}</span>
+          Без верификации <span className={c.count}>{waitingKyc.length}</span>
         </h2>
-        <p className={s.hint}>Заполнили анкету, но ещё не отправили верификацию. После неё они появятся в «На рассмотрении».</p>
+        <p className={s.hint}>Зарегистрировались и смотрят витрину, но ещё не отправили верификацию. После неё они появятся в «На рассмотрении».</p>
         <table className={c.table}>
           <tbody>
             {waitingKyc.map((m) => (

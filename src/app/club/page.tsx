@@ -39,7 +39,7 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
   const hasKey = (await store.listCredentials(m.id)).length > 0;
   const banners = (
     <>
-      {!m.passwordHash && <SetPassword />}
+      {!m.passwordHash && <SetPassword email={m.email} />}
       {!hasKey && <PasskeyOffer />}
       {m.status !== "active" && <VerifyNotice me={m} action="размещать и откликаться" />}
     </>
