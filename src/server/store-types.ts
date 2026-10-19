@@ -71,7 +71,8 @@ export type Store = {
   listListings(): Promise<Listing[]>;
   withdrawListing(id: string, now: Date): Promise<boolean>;
   // Атомарное изменение лота, только если его статус сейчас один из from: два члена совета не решат один лот дважды.
-  updateListingIf(id: string, from: Listing["status"][], patch: Partial<Listing>): Promise<boolean>;
+  // rev: если задан, изменение проходит только при совпадении версии лота.
+  updateListingIf(id: string, from: Listing["status"][], patch: Partial<Listing>, rev?: number): Promise<boolean>;
   addInquiry(i: Inquiry): Promise<void>;
   listInquiries(): Promise<Inquiry[]>;
   markInquiryHandled(id: string): Promise<void>;

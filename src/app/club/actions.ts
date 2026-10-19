@@ -107,14 +107,14 @@ export async function editListing(id: string, _prev: ListingFormState, formData:
   const r = parseForm(l.kind, formData, m);
   if ("errors" in r) return r;
   const isCouncil = m.role === "council";
-  const ok = await store.updateListingIf(id, ["pending", "rejected", "active"], {
-    ...r.fields,
-    status: isCouncil ? "active" : "pending",
-    rejectReason: null,
-    reviewedAt: null,
-    reviewedBy: null,
-  });
-  if (!ok) return { formError: "Лот уже снят" };
+  // Правка поднимает версию: решение совета по старой версии не пройдёт.
+  const ok = await store.updateListingIf(
+    id,
+    ["pending", "rejected", "active"],
+    { ...r.fields, rev: (l.rev ?? 0) + 1, status: isCouncil ? "active" : "pending", rejectReason: null, reviewedAt: null, reviewedBy: null },
+    l.rev ?? 0,
+  );
+  if (!ok) return { formError: "Лот изменился, обновите страницу" };
   await logEvent("listing_edited", `Лот исправлен: «${r.fields.title}» (${m.pseudonym})${isCouncil ? "" : ", снова на проверке"}`, m.id);
   if (!isCouncil) notifyCouncil({ ...l, ...r.fields }, true);
   revalidatePath("/club");

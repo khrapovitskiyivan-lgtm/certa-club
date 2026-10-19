@@ -65,10 +65,11 @@ export const pgStore: Store = {
     return rows.length > 0;
   },
 
-  async updateListingIf(id, from, patch) {
+  async updateListingIf(id, from, patch, rev) {
     await schema();
     const rows = await sql()`update listings set data = data || ${j(patch)}
-      where id = ${id} and data->>'status' = any(${from as string[]}) returning id`;
+      where id = ${id} and data->>'status' = any(${from as string[]})
+        and (${rev ?? null}::int is null or coalesce((data->>'rev')::int, 0) = ${rev ?? null}::int) returning id`;
     return rows.length > 0;
   },
 

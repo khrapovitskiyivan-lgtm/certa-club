@@ -60,11 +60,12 @@ export const fileStore: Store = {
       return true;
     });
   },
-  updateListingIf(id, from, patch) {
+  updateListingIf(id, from, patch, rev) {
     return exclusive(async () => {
       const d = await load();
       const l = d.listings?.find((x) => x.id === id);
       if (!l || !from.includes(l.status)) return false;
+      if (rev !== undefined && (l.rev ?? 0) !== rev) return false;
       Object.assign(l, patch);
       await save(d);
       return true;

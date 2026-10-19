@@ -183,7 +183,13 @@ export async function withdrawDemoListingsAction(): Promise<void> {
   revalidatePath("/council");
 }
 
-// Модерация лотов: решение принимается один раз, повторное нажатие ничего не меняет.
+// Модерация лотов: решение принимается один раз и только по той версии лота, что совет видел.
+// Если автор успел исправить лот, решение не пройдёт, лот останется на проверке в новой версии.
+function formRev(formData: FormData): number {
+  const n = Number(formData.get("rev"));
+  return Number.isInteger(n) && n >= 0 ? n : -1;
+}
+
 async function mailAuthor(l: Listing, subject: string, text: string) {
   const author = await store.getMember(l.authorId);
   if (!author) return;
@@ -196,7 +202,7 @@ export async function approveListingAction(formData: FormData): Promise<void> {
   if (!me) return;
   const l = await store.getListing(String(formData.get("id") ?? ""));
   if (!l) return;
-  const ok = await store.updateListingIf(l.id, ["pending"], { status: "active", reviewedAt: new Date().toISOString(), reviewedBy: me.id, rejectReason: null });
+  const ok = await store.updateListingIf(l.id, ["pending"], { status: "active", reviewedAt: new Date().toISOString(), reviewedBy: me.id, rejectReason: null }, formRev(formData));
   if (!ok) return;
   await logEvent("listing_approved", `Лот опубликован: «${l.title}» (${l.authorPseudonym}), решил ${me.pseudonym}`, me.id);
   await mailAuthor(l, "Лот опубликован", `Экспертный совет проверил лот «${l.title}» и опубликовал его на витрине Certa.`);
@@ -210,7 +216,7 @@ export async function rejectListingAction(formData: FormData): Promise<void> {
   const l = await store.getListing(String(formData.get("id") ?? ""));
   const reason = rejectText(String(formData.get("reason") ?? ""), String(formData.get("note") ?? ""));
   if (!l || !reason) return;
-  const ok = await store.updateListingIf(l.id, ["pending"], { status: "rejected", rejectReason: reason, reviewedAt: new Date().toISOString(), reviewedBy: me.id });
+  const ok = await store.updateListingIf(l.id, ["pending"], { status: "rejected", rejectReason: reason, reviewedAt: new Date().toISOString(), reviewedBy: me.id }, formRev(formData));
   if (!ok) return;
   await logEvent("listing_rejected", `Лот отклонён: «${l.title}» (${l.authorPseudonym}), решил ${me.pseudonym}: ${reason}`, me.id);
   await mailAuthor(l, "Лот нужно доработать", `Экспертный совет вернул лот «${l.title}» на доработку.\n\nПричина: ${reason}\n\nИсправьте лот и отправьте его снова: кнопка «Исправить» на странице лота.`);

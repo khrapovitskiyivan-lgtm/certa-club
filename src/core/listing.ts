@@ -85,6 +85,8 @@ export type Listing = {
   createdAt: string;
   withdrawnAt?: string;
   // Модерация: причина отказа видна автору; кто решил, только в журнале и данных.
+  // Версия лота: растёт при каждой правке; решение совета действует только для той версии, что он видел.
+  rev?: number;
   rejectReason?: string | null;
   reviewedAt?: string | null;
   reviewedBy?: string | null;

@@ -48,12 +48,14 @@ export function ModerationQueue({ lots }: { lots: Listing[] }) {
           <div className={c.lotActions}>
             <form action={approveListingAction}>
               <input type="hidden" name="id" value={l.id} />
+              <input type="hidden" name="rev" value={l.rev ?? 0} />
               <button type="submit" className={s.submit}>
                 Опубликовать
               </button>
             </form>
             <form action={rejectListingAction} className={c.rejectForm}>
               <input type="hidden" name="id" value={l.id} />
+              <input type="hidden" name="rev" value={l.rev ?? 0} />
               <select name="reason" className={s.select} defaultValue="" required>
                 <option value="" disabled>
                   Причина отказа
