@@ -2,10 +2,12 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import type { Listing } from "@/core/listing";
+import { after } from "next/server";
+import { rejectText, type Listing } from "@/core/listing";
 import { createInvite } from "@/core/invites";
 import { currentCouncil } from "@/server/auth";
 import { logEvent } from "@/server/events";
+import { sendMail } from "@/server/mail";
 import { store } from "@/server/store";
 
 export type InviteState = { error?: string; link?: string; code?: string; name?: string };
@@ -178,5 +180,39 @@ export async function withdrawDemoListingsAction(): Promise<void> {
   }
   await logEvent("demo_withdrawn", `Тестовые лоты сняты (${me.pseudonym})`);
   revalidatePath("/club");
+  revalidatePath("/council");
+}
+
+// Модерация лотов: решение принимается один раз, повторное нажатие ничего не меняет.
+async function mailAuthor(l: Listing, subject: string, text: string) {
+  const author = await store.getMember(l.authorId);
+  if (!author) return;
+  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  after(() => sendMail(author.email, subject, `${text}\n\nОткрыть лот: ${base}/club/item/${l.id}`));
+}
+
+export async function approveListingAction(formData: FormData): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const l = await store.getListing(String(formData.get("id") ?? ""));
+  if (!l) return;
+  const ok = await store.updateListingIf(l.id, ["pending"], { status: "active", reviewedAt: new Date().toISOString(), reviewedBy: me.id, rejectReason: null });
+  if (!ok) return;
+  await logEvent("listing_approved", `Лот опубликован: «${l.title}» (${l.authorPseudonym}), решил ${me.pseudonym}`, me.id);
+  await mailAuthor(l, "Лот опубликован", `Экспертный совет проверил лот «${l.title}» и опубликовал его на витрине Certa.`);
+  revalidatePath("/council");
+  revalidatePath("/club");
+}
+
+export async function rejectListingAction(formData: FormData): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const l = await store.getListing(String(formData.get("id") ?? ""));
+  const reason = rejectText(String(formData.get("reason") ?? ""), String(formData.get("note") ?? ""));
+  if (!l || !reason) return;
+  const ok = await store.updateListingIf(l.id, ["pending"], { status: "rejected", rejectReason: reason, reviewedAt: new Date().toISOString(), reviewedBy: me.id });
+  if (!ok) return;
+  await logEvent("listing_rejected", `Лот отклонён: «${l.title}» (${l.authorPseudonym}), решил ${me.pseudonym}: ${reason}`, me.id);
+  await mailAuthor(l, "Лот нужно доработать", `Экспертный совет вернул лот «${l.title}» на доработку.\n\nПричина: ${reason}\n\nИсправьте лот и отправьте его снова: кнопка «Исправить» на странице лота.`);
   revalidatePath("/council");
 }

@@ -3,16 +3,35 @@
 import { useActionState, useState } from "react";
 import { CATEGORIES, CURRENCIES, type Listing } from "@/core/listing";
 import { CITY_SUGGESTIONS } from "@/core/phone";
-import { createListing, type ListingFormState } from "../actions";
+import { createListing, editListing, type ListingFormState } from "../actions";
 import { LotFiles } from "./lot-files";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
 
 const COUNTRIES = ["Россия", "ОАЭ", "Великобритания", "Кипр", "Швейцария", "Монако", "Франция", "Италия", "Германия", "Турция", "Казахстан", "Армения", "Грузия", "Сербия", "США"];
 
-export function ListingForm({ kind }: { kind: Listing["kind"] }) {
-  const [state, action, pending] = useActionState<ListingFormState, FormData>(createListing.bind(null, kind), {});
-  const v = state.values ?? {};
+// Значения формы из сохранённого лота (для правки).
+function fromListing(l: Listing): Record<string, string> {
+  const amount = l.amount === undefined ? "" : String(l.amount);
+  return {
+    category: l.category,
+    title: l.title,
+    description: l.description,
+    [l.kind === "offer" ? "price" : "budget"]: amount,
+    currency: l.currency,
+    country: l.country,
+    city: l.city,
+    ...(l.onRequest ? { priceOnRequest: "on" } : {}),
+    ...(l.quiet ? { quiet: "on" } : {}),
+  };
+}
+
+export function ListingForm({ kind, initial }: { kind: Listing["kind"]; initial?: Listing }) {
+  const [state, action, pending] = useActionState<ListingFormState, FormData>(
+    initial ? editListing.bind(null, initial.id) : createListing.bind(null, kind),
+    {},
+  );
+  const v = state.values ?? (initial ? fromListing(initial) : {});
   const e = state.errors ?? {};
   const [onRequest, setOnRequest] = useState(v.priceOnRequest === "on");
   const isOffer = kind === "offer";
@@ -130,7 +149,7 @@ export function ListingForm({ kind }: { kind: Listing["kind"] }) {
           {err("city")}
         </div>
 
-        {isOffer && <LotFiles />}
+        {isOffer && <LotFiles initialPhotos={initial?.photos} initialDocs={initial?.docs} />}
 
         {isOffer && (
           <label className={c.check}>
@@ -142,7 +161,7 @@ export function ListingForm({ kind }: { kind: Listing["kind"] }) {
 
       {state.formError && <p className={s.formError}>{state.formError}</p>}
       <button type="submit" className={s.submit} disabled={pending}>
-        {pending ? "Публикуем" : isOffer ? "Предложить" : "Разместить запрос"}
+        {pending ? "Отправляем" : initial ? "Отправить на проверку" : isOffer ? "Предложить" : "Разместить запрос"}
       </button>
     </form>
   );

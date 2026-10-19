@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatAmount, validateOffer, validateRequest, visibleTo, type Listing } from "./listing";
+import { formatAmount, rejectText, validateOffer, validateRequest, visibleTo, type Listing } from "./listing";
 
 const offer = {
   category: "watches",
@@ -85,4 +85,14 @@ describe("видимость", () => {
 it("формат суммы", () => {
   expect(formatAmount(12500000, "RUB").replace(/\s/g, " ")).toBe("12 500 000 ₽");
   expect(formatAmount(undefined, "USD")).toBe("");
+});
+
+describe("причина отказа", () => {
+  it("из списка, с уточнением, другое требует текста", () => {
+    expect(rejectText("docs", "")).toBe("Не хватает документов о происхождении");
+    expect(rejectText("docs", "нужен паспорт часов")).toBe("Не хватает документов о происхождении. Нужен паспорт часов");
+    expect(rejectText("other", "")).toBeNull();
+    expect(rejectText("other", "Дубликат лота")).toBe("Дубликат лота");
+    expect(rejectText("bogus", "x")).toBeNull();
+  });
 });

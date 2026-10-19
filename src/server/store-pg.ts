@@ -61,7 +61,14 @@ export const pgStore: Store = {
   async withdrawListing(id, now) {
     await schema();
     const rows = await sql()`update listings set data = data || ${j({ status: "withdrawn", withdrawnAt: now.toISOString() })}
-      where id = ${id} and data->>'status' = 'active' returning id`;
+      where id = ${id} and data->>'status' <> 'withdrawn' returning id`;
+    return rows.length > 0;
+  },
+
+  async updateListingIf(id, from, patch) {
+    await schema();
+    const rows = await sql()`update listings set data = data || ${j(patch)}
+      where id = ${id} and data->>'status' = any(${from as string[]}) returning id`;
     return rows.length > 0;
   },
 

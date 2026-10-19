@@ -173,3 +173,44 @@
   cursor: default;
   opacity: 0.7;
 }
+
+/* Модерация лотов */
+.lot {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.lotCover {
+  width: 120px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: #ece6db;
+  display: block;
+}
+
+.lotActions {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.rejectForm {
+  display: grid;
+  gap: 10px;
+}
+
+.rejectForm .danger {
+  justify-self: start;
+}
+
+@media (max-width: 640px) {
+  .lot {
+    grid-template-columns: 1fr;
+  }
+  .lotCover {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+  }
+}

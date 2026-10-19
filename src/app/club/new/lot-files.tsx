@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LIMITS } from "@/core/upload";
+import { keyFromUrl, LIMITS } from "@/core/upload";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
 
@@ -31,9 +31,14 @@ async function send(body: Blob, name: string, kind: "photo" | "doc"): Promise<st
 }
 
 // Фото и документы лота. Файлы грузятся сразу по одному, в форму уходят только ключи.
-export function LotFiles() {
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [docs, setDocs] = useState<Doc[]>([]);
+export function LotFiles({ initialPhotos = [], initialDocs = [] }: { initialPhotos?: string[]; initialDocs?: Doc[] }) {
+  const [photos, setPhotos] = useState<Photo[]>(() =>
+    initialPhotos.flatMap((url) => {
+      const key = keyFromUrl(url);
+      return key ? [{ key, preview: url }] : [];
+    }),
+  );
+  const [docs, setDocs] = useState<Doc[]>(initialDocs);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 

@@ -51,7 +51,10 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
   const country = one(sp.country).trim().toLowerCase();
   const isCouncil = m.role === "council";
 
-  const all = (await store.listListings()).filter((l) => l.kind === tab && l.status === "active" && visibleTo(l, m.id, isCouncil));
+  const listings = await store.listListings();
+  const all = listings.filter((l) => l.kind === tab && l.status === "active" && visibleTo(l, m.id, isCouncil));
+  // Свои лоты, которые ещё не на витрине: на проверке или возвращены на доработку.
+  const mineInReview = listings.filter((l) => l.authorId === m.id && (l.status === "pending" || l.status === "rejected"));
   const items = all.filter(
     (l) => (!category || l.category === category) && (!country || l.country.toLowerCase().includes(country)),
   );
@@ -60,6 +63,18 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
     <>
       <ClubHeader me={m} />
       {banners}
+
+      {mineInReview.length > 0 && (
+        <div className={c.review}>
+          <p className={c.cardCat}>Ваши лоты вне витрины</p>
+          {mineInReview.map((l) => (
+            <Link key={l.id} href={`/club/item/${l.id}`} className={c.docRow}>
+              <span>{l.title}</span>
+              <span className={c.cardMeta}>{l.status === "pending" ? "На проверке у совета" : "Вернули на доработку"}</span>
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className={c.tabs}>
         <Link href="/club" className={tab === "offer" ? c.tabActive : c.tab}>

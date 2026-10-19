@@ -15,6 +15,7 @@ import {
   withdrawDemoListingsAction,
 } from "./actions";
 import { InviteForm } from "./invite-form";
+import { ModerationQueue } from "./moderation";
 import { RoleSelect } from "./role-select";
 import { AppHeader } from "../app-header";
 import { PasskeyOffer } from "../passkey/offer";
@@ -74,7 +75,9 @@ async function CouncilContent() {
     store.listCredentials(me.id),
   ]);
   const inquiries = await store.listInquiries();
-  const demoActive = (await store.listListings()).filter((l) => l.demo && l.status === "active").length;
+  const listings = await store.listListings();
+  const demoActive = listings.filter((l) => l.demo && l.status === "active").length;
+  const toReview = listings.filter((l) => l.status === "pending").reverse();
   const openInquiries = inquiries.filter((i) => i.status === "new");
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
@@ -85,6 +88,8 @@ async function CouncilContent() {
       <AppHeader me={me} area="council" />
       {!me.passwordHash && <SetPassword email={me.email} />}
       {keys.length === 0 && <PasskeyOffer />}
+
+      <ModerationQueue lots={toReview} />
 
       <section className={c.section}>
         <h2 className={c.h2}>

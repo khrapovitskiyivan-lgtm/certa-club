@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { CATEGORIES, formatAmount, visibleTo } from "@/core/listing";
@@ -49,7 +50,16 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
         {l.photos && l.photos.length > 0 && <Gallery photos={l.photos} alt={l.title} />}
         {l.demo && <span className={c.badge}>Тестовый лот</span>}
         {l.quiet && <span className={c.badge}>Тихий лот: виден только вам и совету</span>}
-        {l.status !== "active" && <span className={c.badge}>Снято</span>}
+        {l.status === "withdrawn" && <span className={c.badge}>Снято</span>}
+        {l.status === "pending" && (
+          <p className={s.hint}>На проверке у экспертного совета. Лот появится на витрине после решения, обычно в течение суток.</p>
+        )}
+        {l.status === "rejected" && <p className={s.formError}>Совет вернул лот на доработку: {l.rejectReason}</p>}
+        {mine && l.status !== "withdrawn" && me.status === "active" && (
+          <Link href={`/club/item/${l.id}/edit`} className={s.backBtn}>
+            {l.status === "rejected" ? "Исправить и отправить снова" : "Исправить"}
+          </Link>
+        )}
         {l.description && <p className={c.itemText}>{l.description}</p>}
 
         <dl className={c.dl}>
@@ -88,11 +98,11 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
 
         {l.status === "active" && !mine && (me.status === "active" ? <InquiryForm id={l.id} kind={l.kind} /> : <VerifyNotice me={me} action="откликнуться" next={`/club/item/${l.id}`} />)}
 
-        {l.status === "active" && (mine || isCouncil) && (
+        {l.status !== "withdrawn" && (mine || isCouncil) && (
           <form action={withdrawListing}>
             <input type="hidden" name="id" value={l.id} />
             <button type="submit" className={s.backBtn}>
-              {mine ? "Снять с витрины" : "Снять (совет)"}
+              {mine ? (l.status === "active" ? "Снять с витрины" : "Отозвать лот") : "Снять (совет)"}
             </button>
           </form>
         )}

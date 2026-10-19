@@ -53,9 +53,19 @@ export const fileStore: Store = {
     return exclusive(async () => {
       const d = await load();
       const l = d.listings?.find((x) => x.id === id);
-      if (!l || l.status !== "active") return false;
+      if (!l || l.status === "withdrawn") return false;
       l.status = "withdrawn";
       l.withdrawnAt = now.toISOString();
+      await save(d);
+      return true;
+    });
+  },
+  updateListingIf(id, from, patch) {
+    return exclusive(async () => {
+      const d = await load();
+      const l = d.listings?.find((x) => x.id === id);
+      if (!l || !from.includes(l.status)) return false;
+      Object.assign(l, patch);
       await save(d);
       return true;
     });

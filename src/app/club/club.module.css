@@ -315,3 +315,9 @@
   object-fit: cover;
   display: block;
 }
+
+.review {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 32px;
+}

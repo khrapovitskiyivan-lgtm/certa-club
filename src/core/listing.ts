@@ -80,9 +80,14 @@ export type Listing = {
   docs?: { key: string; name: string }[];
   // Тестовый лот, созданный советом для демонстрации витрины.
   demo?: boolean;
-  status: "active" | "withdrawn";
+  // pending: на проверке у совета; rejected: отклонён с причиной; active: на витрине.
+  status: "pending" | "active" | "rejected" | "withdrawn";
   createdAt: string;
   withdrawnAt?: string;
+  // Модерация: причина отказа видна автору; кто решил, только в журнале и данных.
+  rejectReason?: string | null;
+  reviewedAt?: string | null;
+  reviewedBy?: string | null;
 };
 
 export type FieldErrors = Record<string, string>;
@@ -111,6 +116,24 @@ export function visibleTo(l: Listing, viewerId: string, isCouncil: boolean): boo
   if (l.status !== "active") return isCouncil || l.authorId === viewerId;
   if (l.quiet) return isCouncil || l.authorId === viewerId;
   return true;
+}
+
+// Причины отказа в публикации: совет выбирает из списка, «другое» требует текста.
+export const REJECT_REASONS = {
+  photos: "Нужны фото лучше: чётко, при дневном свете, со всех сторон",
+  docs: "Не хватает документов о происхождении",
+  notClub: "Вещь не подходит для клуба",
+  contacts: "В описании контакты или ссылки: общение идёт через куратора",
+  other: "Другое",
+} as const;
+export type RejectReason = keyof typeof REJECT_REASONS;
+
+export function rejectText(reason: string, note: string): string | null {
+  if (!(reason in REJECT_REASONS)) return null;
+  const t = note.trim().slice(0, 500);
+  const n = t.charAt(0).toUpperCase() + t.slice(1);
+  if (reason === "other") return n.length >= 3 ? n : null;
+  return n ? `${REJECT_REASONS[reason as RejectReason]}. ${n}` : REJECT_REASONS[reason as RejectReason];
 }
 
 export function formatAmount(amount: number | undefined, currency: Currency): string {
