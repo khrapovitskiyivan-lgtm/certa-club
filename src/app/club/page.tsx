@@ -5,11 +5,11 @@ import { connection } from "next/server";
 import { CATEGORIES, formatAmount, visibleTo, type Category, type Listing } from "@/core/listing";
 import { currentMember } from "@/server/auth";
 import { store } from "@/server/store";
-import { logout } from "../auth-actions";
 import { PasskeyOffer } from "../passkey/offer";
 import { SetPassword } from "../passkey/set-password";
 import { ClubHeader } from "./club-header";
 import s from "../invite/invite.module.css";
+import { VerifyNotice } from "./verify-notice";
 import c from "./club.module.css";
 
 export default function ClubPage({ searchParams }: PageProps<"/club">) {
@@ -36,33 +36,14 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
   await connection();
   const m = await currentMember();
   if (!m) redirect("/login");
-  if (m.status === "awaiting_kyc") redirect("/verify");
   const hasKey = (await store.listCredentials(m.id)).length > 0;
   const banners = (
     <>
       {!m.passwordHash && <SetPassword />}
       {!hasKey && <PasskeyOffer />}
+      {m.status !== "active" && <VerifyNotice me={m} action="размещать и откликаться" />}
     </>
   );
-
-  if (m.status !== "active") {
-    return (
-      <div className={s.narrow} style={{ margin: 0 }}>
-        <p className={s.mark}>Certa</p>
-        {banners}
-        <h1 className={s.title}>Верификация на рассмотрении</h1>
-        <p className={s.lead}>
-          Экспертный совет рассматривает вашу верификацию. Когда участие будет подтверждено, клуб откроется для вас
-          здесь.
-        </p>
-        <form action={logout}>
-          <button type="submit" className={s.backBtn}>
-            Выйти
-          </button>
-        </form>
-      </div>
-    );
-  }
 
   const sp = await searchParams;
   const tab = one(sp.tab) === "requests" ? "request" : "offer";

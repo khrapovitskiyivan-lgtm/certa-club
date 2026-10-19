@@ -53,7 +53,7 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
     loginLimiter.reset(email);
     await logEvent("login", `Вход по паролю: ${m.pseudonym}`, m.id);
     await startSession(m.id);
-    redirect(m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club");
+    redirect(m.role === "council" ? "/council" : "/club");
   }
 
   // «Забыли пароль?»: ответ одинаковый всегда, письмо уходит только настоящему участнику.
@@ -131,7 +131,7 @@ export async function register(code: string, _prev: RegisterState, formData: For
   await logEvent("registered", `Регистрация: ${d.pseudonym} по приглашению «${check.invite.inviteeName}»`, memberId);
   // Пароль задан: это полноценный вход. Face ID предложим позже, в обычном браузере.
   await startSession(memberId);
-  redirect(check.invite.council ? "/council" : "/verify");
+  redirect(check.invite.council ? "/council" : "/club");
 }
 
 export type VerifyState = { errors?: VerificationErrors; formError?: string; values?: Record<string, string> };

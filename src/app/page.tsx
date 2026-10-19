@@ -19,6 +19,6 @@ export default function Home() {
 async function MemberRedirect() {
   await connection();
   const m = await currentMember();
-  if (m) redirect(m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club");
+  if (m) redirect(m.role === "council" ? "/council" : "/club");
   return null;
 }

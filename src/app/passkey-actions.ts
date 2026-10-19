@@ -27,7 +27,7 @@ import { store, type Member } from "@/server/store";
 type Result = { ok: true; next: string } | { ok: false; error: string };
 
 function home(m: Member): string {
-  return m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club";
+  return m.role === "council" ? "/council" : "/club";
 }
 
 // Кто вправе добавить ключ:

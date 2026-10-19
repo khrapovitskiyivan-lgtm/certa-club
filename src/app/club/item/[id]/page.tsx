@@ -7,6 +7,7 @@ import { store } from "@/server/store";
 import { withdrawListing } from "../../actions";
 import { ClubHeader } from "../../club-header";
 import { InquiryForm } from "./inquiry-form";
+import { VerifyNotice } from "../../verify-notice";
 import s from "../../../invite/invite.module.css";
 import c from "../../club.module.css";
 
@@ -28,7 +29,6 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   const me = await currentMember();
   if (!me) redirect("/login");
-  if (me.status !== "active") redirect("/verify");
   const { id } = await params;
   const l = await store.getListing(id);
   const isCouncil = me.role === "council";
@@ -74,7 +74,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <dd>{fmt(l.createdAt)}</dd>
         </dl>
 
-        {l.status === "active" && !mine && <InquiryForm id={l.id} kind={l.kind} />}
+        {l.status === "active" && !mine && (me.status === "active" ? <InquiryForm id={l.id} kind={l.kind} /> : <VerifyNotice me={me} action="откликнуться" />)}
 
         {l.status === "active" && (mine || isCouncil) && (
           <form action={withdrawListing}>

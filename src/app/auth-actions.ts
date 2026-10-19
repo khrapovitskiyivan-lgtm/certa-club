@@ -17,7 +17,7 @@ export async function redeemLoginLink(token: string): Promise<AuthState> {
   if (!m) return { error: "Участник не найден" };
   await logEvent("login", `Вход по ссылке из письма: ${m.pseudonym}`, m.id);
   await startSession(m.id);
-  redirect(m.role === "council" ? "/council" : m.status === "awaiting_kyc" ? "/verify" : "/club");
+  redirect(m.role === "council" ? "/council" : "/club");
 }
 
 export async function logout(): Promise<void> {

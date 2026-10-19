@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import { currentMember } from "@/server/auth";
 import { ClubHeader } from "../club-header";
 import { ListingForm } from "./listing-form";
+import { VerifyNotice } from "../verify-notice";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
 
@@ -23,7 +24,6 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
   await connection();
   const me = await currentMember();
   if (!me) redirect("/login");
-  if (me.status !== "active") redirect("/verify");
   const kind = (await searchParams).kind === "request" ? "request" : "offer";
 
   return (
@@ -36,7 +36,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
             ? "Участники увидят вещь под вашим псевдонимом. Имя раскрывается только с вашего согласия, на этапе сделки."
             : "Запрос увидят участники клуба под вашим псевдонимом. У кого есть такая вещь, откликнется через куратора."}
         </p>
-        <ListingForm kind={kind} />
+        {me.status === "active" ? <ListingForm kind={kind} /> : <VerifyNotice me={me} action="разместить" />}
       </div>
     </>
   );
