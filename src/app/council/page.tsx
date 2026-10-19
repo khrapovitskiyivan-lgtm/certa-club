@@ -5,7 +5,6 @@ import type { Invite } from "@/core/invites";
 import { AGENT_TYPES } from "@/core/verification";
 import { currentCouncil } from "@/server/auth";
 import { store, type Member } from "@/server/store";
-import { logout } from "../auth-actions";
 import Link from "next/link";
 import {
   approveMember,
@@ -17,6 +16,7 @@ import {
 } from "./actions";
 import { InviteForm } from "./invite-form";
 import { RoleSelect } from "./role-select";
+import { AppHeader } from "../app-header";
 import { PasskeyOffer } from "../passkey/offer";
 import { SetPassword } from "../passkey/set-password";
 import s from "../invite/invite.module.css";
@@ -82,18 +82,7 @@ async function CouncilContent() {
 
   return (
     <>
-      <header className={c.head}>
-        <p className={s.mark}>Certa</p>
-        <div className={c.who}>
-          <span>Экспертный совет · {me.pseudonym}</span>
-          <Link href="/club">Витрина</Link>
-          <form action={logout}>
-            <button type="submit" className={s.backBtn}>
-              Выйти
-            </button>
-          </form>
-        </div>
-      </header>
+      <AppHeader me={me} area="council" />
       {!me.passwordHash && <SetPassword />}
       {keys.length === 0 && <PasskeyOffer />}
 

@@ -119,6 +119,23 @@
   .inline {
     grid-template-columns: 1fr;
   }
+  /* Таблицы на телефоне: каждая строка становится карточкой */
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+  .table tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .table td {
+    padding: 3px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
   .dl {
     grid-template-columns: 1fr;
   }

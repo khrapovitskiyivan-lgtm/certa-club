@@ -27,16 +27,15 @@ export async function logout(): Promise<void> {
 
 export type SetPasswordState = { error?: string; done?: boolean };
 
-// Пароль для участников, зарегистрированных без него (период входа только по Face ID).
+// Задать или сменить пароль. Доступно только уже вошедшему участнику.
 export async function setPasswordAction(_prev: SetPasswordState, formData: FormData): Promise<SetPasswordState> {
   const id = await sessionMemberId();
   const m = id ? await store.getMember(id) : undefined;
   if (!m) return { error: "Войдите заново" };
-  if (m.passwordHash) return { error: "Пароль уже задан" };
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { error: "Не короче 8 символов" };
   if (password !== String(formData.get("passwordConfirm") ?? "")) return { error: "Пароли не совпадают" };
   await store.updateMember(m.id, { passwordHash: await hashPassword(password) });
-  await logEvent("password_set", `Задан пароль: ${m.pseudonym}`, m.id);
+  await logEvent("password_set", `${m.passwordHash ? "Сменён" : "Задан"} пароль: ${m.pseudonym}`, m.id);
   return { done: true };
 }

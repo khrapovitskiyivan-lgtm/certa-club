@@ -1,0 +1,150 @@
+.header {
+  margin-bottom: 5vh;
+}
+
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+
+.logo {
+  font-family: var(--font-serif), serif;
+  font-size: 22px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Служебное меню: мелко и приглушённо, чтобы не спорить с действиями */
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.inline a:hover,
+.linkBtn:hover {
+  color: var(--ink);
+}
+
+.who {
+  color: var(--ink-2);
+  opacity: 0.75;
+  padding-right: 22px;
+  border-right: 1px solid var(--line);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 13px;
+}
+
+.linkBtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.mobile {
+  display: none;
+}
+
+/* Действия витрины отдельной строкой */
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.action {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 11px 20px;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  transition:
+    background-color 300ms var(--ease),
+    color 300ms var(--ease);
+}
+
+.action:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.section {
+  margin-top: 18px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+@media (max-width: 720px) {
+  .inline {
+    display: none;
+  }
+
+  .mobile {
+    display: block;
+  }
+
+  .mobile summary {
+    list-style: none;
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    padding: 6px 0;
+  }
+
+  .mobile summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 1px);
+    z-index: 10;
+    min-width: 220px;
+    display: grid;
+    gap: 16px;
+    padding: 20px 22px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .panel .who {
+    border-right: 0;
+    padding-right: 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .action {
+    text-align: center;
+  }
+}

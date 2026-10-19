@@ -1,28 +1,7 @@
-import Link from "next/link";
 import type { Member } from "@/server/store";
-import { logout } from "../auth-actions";
-import s from "../invite/invite.module.css";
-import c from "./club.module.css";
+import { AppHeader } from "../app-header";
 
-// Шапка клуба: разделы витрины, кабинет совета для совета, выход.
+// Шапка витрины: общая шапка клуба с действиями «Предложить» и «Ищу».
 export function ClubHeader({ me }: { me: Member }) {
-  return (
-    <header className={c.header}>
-      <Link href="/club" className={s.mark}>
-        Certa
-      </Link>
-      <nav className={c.nav}>
-        <Link href="/club">Предложения</Link>
-        <Link href="/club?tab=requests">Ищут в клубе</Link>
-        <Link href="/club/new?kind=offer">Предложить</Link>
-        <Link href="/club/new?kind=request">Ищу</Link>
-        {me.role === "council" && <Link href="/council">Совет</Link>}
-        <form action={logout}>
-          <button type="submit" className={c.navBtn}>
-            Выйти
-          </button>
-        </form>
-      </nav>
-    </header>
-  );
+  return <AppHeader me={me} area="club" />;
 }
