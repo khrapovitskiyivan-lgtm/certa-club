@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { hashToken } from "@/core/entry";
 import { logEvent } from "@/server/events";
-import { hashPassword } from "@/server/password";
+import { hashPassword, verifyPassword } from "@/server/password";
 import { endSession, sessionMemberId, startSession } from "@/server/session";
 import { store } from "@/server/store";
 
@@ -32,6 +32,10 @@ export async function setPasswordAction(_prev: SetPasswordState, formData: FormD
   const id = await sessionMemberId();
   const m = id ? await store.getMember(id) : undefined;
   if (!m) return { error: "Войдите заново" };
+  // Смена существующего пароля только с текущим: украденная сессия не должна давать захват входа.
+  if (m.passwordHash && !(await verifyPassword(String(formData.get("currentPassword") ?? ""), m.passwordHash))) {
+    return { error: "Неверный текущий пароль" };
+  }
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { error: "Не короче 8 символов" };
   if (password !== String(formData.get("passwordConfirm") ?? "")) return { error: "Пароли не совпадают" };
