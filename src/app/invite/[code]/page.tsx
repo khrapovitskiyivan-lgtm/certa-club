@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: null,
   openGraph: {
     title: "Приглашение в Certa",
-    images: [{ url: "/og-v3.png", width: 1200, height: 630, alt: "Certa" }],
+    images: [{ url: "/og-v2.png", width: 1200, height: 630, alt: "Certa" }],
   },
 };
 

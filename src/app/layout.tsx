@@ -20,14 +20,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.CERTA_BASE_URL ?? "http://localhost:3000"),
   title: "Certa",
   description: "Закрытый клуб. Вход по приглашению.",
-  // Карточка ссылки в мессенджерах: заголовок, описание и картинка public/og-v3.png.
+  // Карточка ссылки в мессенджерах: заголовок, описание и картинка public/og-v2.png.
   openGraph: {
     type: "website",
     siteName: "Certa",
     title: "Certa",
     description: "Закрытый клуб. Вход по приглашению.",
     locale: "ru_RU",
-    images: [{ url: "/og-v3.png", width: 1200, height: 630, alt: "Certa" }],
+    images: [{ url: "/og-v2.png", width: 1200, height: 630, alt: "Certa" }],
   },
   twitter: { card: "summary_large_image" },
   // Закрытый клуб не должен попадать в поисковую выдачу.
