@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { registrationMemberId, sessionMemberId } from "@/server/session";
 import { store } from "@/server/store";
-import { Steps } from "../invite/steps";
 import { VerifyForm } from "./verify-form";
 import s from "../invite/invite.module.css";
 
@@ -37,7 +36,6 @@ async function VerifyContent() {
 
   return (
     <>
-      <Steps current={2} />
       <h1 className={s.title}>Верификация</h1>
       <p className={s.lead}>
         Клуб работает по стандартам частного банковского обслуживания: каждый участник подтверждает личность

@@ -1,9 +1,9 @@
 import s from "./invite.module.css";
 
-const STEPS = ["О клубе", "О вас", "Верификация"] as const;
+const STEPS = ["О клубе", "О вас"] as const;
 
-// Индикатор пути вступления: три шага, текущий выделен.
-export function Steps({ current }: { current: 0 | 1 | 2 }) {
+// Индикатор пути вступления: два шага, верификация позже, по необходимости, текущий выделен.
+export function Steps({ current }: { current: 0 | 1 }) {
   return (
     <ol className={s.steps} aria-label="Шаги вступления">
       {STEPS.map((label, i) => (
