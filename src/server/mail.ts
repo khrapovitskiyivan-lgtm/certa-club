@@ -12,7 +12,14 @@ async function sendViaProvider(to: string, subject: string, text: string): Promi
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.MAIL_FROM, to: [to], subject, text }),
+      body: JSON.stringify({
+        from: process.env.MAIL_FROM,
+        to: [to],
+        subject,
+        text,
+        // Ответ участника уходит в живой ящик клуба (MAIL_REPLY_TO), а не на адрес отправки.
+        ...(process.env.MAIL_REPLY_TO ? { reply_to: process.env.MAIL_REPLY_TO } : {}),
+      }),
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) console.error(`[почта] не отправлено: ${res.status}`);
