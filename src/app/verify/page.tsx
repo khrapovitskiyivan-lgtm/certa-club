@@ -32,6 +32,7 @@ async function VerifyContent() {
       </>
     );
   }
+  if (await sessionMemberId()) redirect("/club/verify");
   if (member.status !== "awaiting_kyc") redirect("/welcome");
 
   return (
@@ -41,7 +42,7 @@ async function VerifyContent() {
         Клуб работает по стандартам частного банковского обслуживания: каждый участник подтверждает личность
         и финансовую состоятельность. Раскрывать состав активов не требуется. Выберите удобный способ.
       </p>
-      <VerifyForm />
+      <VerifyForm next="/club" />
     </>
   );
 }

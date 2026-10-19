@@ -74,7 +74,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <dd>{fmt(l.createdAt)}</dd>
         </dl>
 
-        {l.status === "active" && !mine && (me.status === "active" ? <InquiryForm id={l.id} kind={l.kind} /> : <VerifyNotice me={me} action="откликнуться" />)}
+        {l.status === "active" && !mine && (me.status === "active" ? <InquiryForm id={l.id} kind={l.kind} /> : <VerifyNotice me={me} action="откликнуться" next={`/club/item/${l.id}`} />)}
 
         {l.status === "active" && (mine || isCouncil) && (
           <form action={withdrawListing}>

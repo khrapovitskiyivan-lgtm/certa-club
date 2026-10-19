@@ -10,6 +10,7 @@ import { validateVerification, type VerificationErrors } from "@/core/verificati
 import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { hashPassword, verifyPassword } from "@/server/password";
+import { safeNext } from "@/core/next-path";
 import { sendMail } from "@/server/mail";
 import { registrationMemberId, sessionMemberId, startSession } from "@/server/session";
 import { store } from "@/server/store";
@@ -153,5 +154,5 @@ export async function submitVerification(_prev: VerifyState, formData: FormData)
   );
   if (!ok) return { formError: "Не удалось сохранить. Обратитесь к куратору клуба.", values };
   await logEvent("verification", `Отправлена верификация: ${v.data.method === "self" ? "лично" : "через агента"}`, id);
-  redirect("/welcome");
+  redirect(`/club/verify?next=${encodeURIComponent(safeNext(values.next))}`);
 }

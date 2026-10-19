@@ -36,7 +36,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
             ? "Участники увидят вещь под вашим псевдонимом. Имя раскрывается только с вашего согласия, на этапе сделки."
             : "Запрос увидят участники клуба под вашим псевдонимом. У кого есть такая вещь, откликнется через куратора."}
         </p>
-        {me.status === "active" ? <ListingForm kind={kind} /> : <VerifyNotice me={me} action="разместить" />}
+        {me.status === "active" ? <ListingForm kind={kind} /> : <VerifyNotice me={me} action="разместить" next={`/club/new?kind=${kind}`} />}
       </div>
     </>
   );

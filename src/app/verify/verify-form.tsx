@@ -6,7 +6,7 @@ import { AGENT_TYPES } from "@/core/verification";
 import { submitVerification, type VerifyState } from "../actions";
 import s from "../invite/invite.module.css";
 
-export function VerifyForm() {
+export function VerifyForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState<VerifyState, FormData>(submitVerification, {});
   const [method, setMethod] = useState(state.values?.method ?? "");
   const e = state.errors ?? {};
@@ -15,6 +15,7 @@ export function VerifyForm() {
     <form action={action} className={s.form} noValidate>
       {/* Выбор держим в состоянии: сброс формы после отправки не должен терять способ. */}
       <input type="hidden" name="method" value={method} />
+      <input type="hidden" name="next" value={next} />
       <div className={s.options} role="radiogroup" aria-label="Способ верификации">
         <label className={s.option}>
           <input type="radio" name="methodChoice" value="self" checked={method === "self"} onChange={() => setMethod("self")} />

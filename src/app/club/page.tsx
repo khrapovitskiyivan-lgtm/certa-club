@@ -41,7 +41,7 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
     <>
       {!m.passwordHash && <SetPassword email={m.email} />}
       {!hasKey && <PasskeyOffer />}
-      {m.status !== "active" && <VerifyNotice me={m} action="размещать и откликаться" />}
+      {m.status !== "active" && <VerifyNotice me={m} action="размещать и откликаться" next="/club" />}
     </>
   );
 
