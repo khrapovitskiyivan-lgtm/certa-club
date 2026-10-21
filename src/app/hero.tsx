@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { browserSupportsWebAuthnAutofill, startAuthentication } from "@simplewebauthn/browser";
@@ -12,19 +12,12 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 const LETTERS = "CERTA".split("");
 const SEEN_KEY = "certa.intro.seen";
 
-// Таймлайн интро в секундах; на повторном визите сжимается.
-const T = { line: 0, letters: 0.8, step: 0.2, letterDur: 2.2, tagline: 3.6, invite: 4 };
+// Длительность интро в секундах. Само интро на CSS (hero.module.css): оно идёт и без скриптов,
+// иначе при медленной загрузке JS страница остаётся пустой.
+const INTRO = 4.8;
 
 export function Hero() {
   const reduced = useReducedMotion();
-  const [speed] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    try {
-      return sessionStorage.getItem(SEEN_KEY) ? 0.35 : 1;
-    } catch {
-      return 1;
-    }
-  });
   // skip: интро нельзя ждать, любое действие доводит его до финала.
   const [skip, setSkip] = useState(false);
   const [done, setDone] = useState(false);
@@ -33,10 +26,19 @@ export function Hero() {
   const instant = Boolean(reduced) || skip;
 
   useEffect(() => {
+    // На повторном визите интро сразу в финале. Читаем после гидратации, чтобы HTML сервера и клиента совпадал.
     try {
+      if (sessionStorage.getItem(SEEN_KEY)) {
+        doneRef.current = true;
+        const t = setTimeout(() => {
+          setSkip(true);
+          setDone(true);
+        }, 0);
+        return () => clearTimeout(t);
+      }
       sessionStorage.setItem(SEEN_KEY, "1");
     } catch {}
-    const total = (T.invite + 0.8) * speed * 1000;
+    const total = INTRO * 1000;
     const id = setTimeout(() => {
       doneRef.current = true;
       setDone(true);
@@ -57,52 +59,24 @@ export function Hero() {
       window.removeEventListener("keydown", stop);
       window.removeEventListener("wheel", stop);
     };
-  }, [instant, speed]);
-
-  const at = (delay: number, duration: number) =>
-    instant ? { duration: 0 } : { delay: delay * speed, duration: duration * speed, ease: EASE };
+  }, [instant]);
 
   return (
-    <main className={s.root} data-done={done || instant ? "" : undefined}>
-      <Fragment key={skip ? "skip" : "intro"}>
+    <main className={s.root} data-done={done || instant ? "" : undefined} data-skip={instant ? "" : undefined}>
       <div className={s.center}>
         <h1 className={s.name} aria-label="Certa">
           {LETTERS.map((ch, i) => (
-            <motion.span
-              key={i}
-              aria-hidden
-              className={s.letter}
-              initial={{ opacity: 0, x: (i - 2) * 22, filter: "blur(8px)" }}
-              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-              transition={at(T.letters + i * T.step, T.letterDur)}
-            >
+            <span key={i} aria-hidden className={s.letter} style={{ "--i": i } as React.CSSProperties}>
               {ch}
-            </motion.span>
+            </span>
           ))}
-          <motion.span
-            className={s.tagline}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={at(T.tagline, 1.2)}
-          >
-            Редкие вещи. Проверенные люди.
-          </motion.span>
+          <span className={s.tagline}>Редкие вещи. Проверенные люди.</span>
         </h1>
 
-        <motion.div
-          className={s.line}
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={at(T.line, 0.8)}
-        />
+        <div className={s.line} />
       </div>
 
-      <motion.div
-        className={s.invite}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={at(T.invite, 0.6)}
-      >
+      <div className={s.invite}>
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <CodeForm key="form" onClose={() => setOpen(false)} />
@@ -118,8 +92,7 @@ export function Hero() {
             </motion.button>
           )}
         </AnimatePresence>
-      </motion.div>
-      </Fragment>
+      </div>
     </main>
   );
 }
