@@ -31,7 +31,7 @@ docker compose version
 
 ### 2. Код
 
-Репозиторий приватный: нужен доступ на GitHub (владелец добавит пользователя в репозиторий).
+Репозиторий публичный, доступ не нужен.
 
 ```bash
 git clone https://github.com/khrapovitskiyivan-lgtm/certa-club.git certa
