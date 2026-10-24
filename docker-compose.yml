@@ -1,0 +1,50 @@
+# Certa на своём сервере: сайт, база Postgres и Caddy (HTTPS-сертификат выпускается сам).
+# Перед запуском: cp .env.example .env и заполнить значения.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: certa
+      POSTGRES_USER: certa
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certa -d certa"]
+      interval: 5s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://certa:${DB_PASSWORD}@db:5432/certa
+      CERTA_DB_SSL: disable
+      # Фото и документы лотов хранятся на диске сервера, в томе files.
+      CERTA_DATA_DIR: /data
+      CERTA_TRUST_PROXY: "1"
+    volumes:
+      - files:/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy:/data
+
+volumes:
+  db:
+  files:
+  caddy:

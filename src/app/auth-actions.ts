@@ -39,7 +39,9 @@ export async function setPasswordAction(_prev: SetPasswordState, formData: FormD
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) return { error: "Не короче 8 символов" };
   if (password !== String(formData.get("passwordConfirm") ?? "")) return { error: "Пароли не совпадают" };
-  await store.updateMember(m.id, { passwordHash: await hashPassword(password) });
+  // Смена пароля завершает все остальные сессии; текущему устройству выдаём новую.
+  await store.updateMember(m.id, { passwordHash: await hashPassword(password), sessionsValidFrom: Math.floor(Date.now() / 1000) });
+  await startSession(m.id);
   await logEvent("password_set", `${m.passwordHash ? "Сменён" : "Задан"} пароль: ${m.pseudonym}`, m.id);
   return { done: true };
 }

@@ -22,7 +22,7 @@ export function VerifyForm({ next }: { next: string }) {
           <span className={s.optionTitle}>Лично</span>
           <span className={s.optionText}>
             Через независимого провайдера: документ, удостоверяющий личность, и проверка лица.
-            Ссылку на проверку пришлёт куратор клуба.
+            Ссылку на проверку куратор клуба пришлёт на почту из анкеты.
           </span>
         </label>
         <label className={s.option}>

@@ -206,6 +206,28 @@ export const fileStore: Store = {
       return true;
     });
   },
+  approveMember(id: string, now: Date): Promise<boolean> {
+    return exclusive(async () => {
+      const d = await load();
+      const m = d.members.find((x) => x.id === id);
+      if (!m || m.status !== "kyc_submitted") return false;
+      m.status = "active";
+      m.activatedAt = now.toISOString();
+      await save(d);
+      return true;
+    });
+  },
+  setMemberRole(id, role) {
+    return exclusive(async () => {
+      const d = await load();
+      const m = d.members.find((x) => x.id === id && x.status === "active");
+      if (!m) return "missing" as const;
+      if (m.role === "council" && role !== "council" && d.members.filter((x) => x.role === "council" && x.status === "active").length <= 1) return "last_council" as const;
+      m.role = role;
+      await save(d);
+      return "ok" as const;
+    });
+  },
   submitVerification(id: string, v: Verification): Promise<boolean> {
     return exclusive(async () => {
       const d = await load();

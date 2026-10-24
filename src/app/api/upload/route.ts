@@ -24,6 +24,11 @@ export async function POST(req: Request) {
   if (!sniffOk(new Uint8Array(body.slice(0, 16)), check.ext)) return Response.json({ error: "Файл повреждён или не того формата" }, { status: 400 });
 
   const key = makeKey(m.id, kind, randomUUID(), check.ext);
-  await putFile(key, body, file.type);
+  try {
+    await putFile(key, body, file.type);
+  } catch (e) {
+    console.error(`[файлы] не сохранено ${key}: ${e instanceof Error ? e.message : "ошибка"}`);
+    return Response.json({ error: "Хранилище файлов недоступно, попробуйте позже" }, { status: 503 });
+  }
   return Response.json({ key, url: fileUrl(key) });
 }

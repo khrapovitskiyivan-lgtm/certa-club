@@ -16,8 +16,7 @@ export async function approveMember(formData: FormData): Promise<void> {
   if (!(await currentCouncil())) return;
   const id = String(formData.get("id") ?? "");
   const m = await store.getMember(id);
-  if (!m || m.status !== "kyc_submitted") return;
-  await store.updateMember(id, { status: "active", activatedAt: new Date().toISOString() });
+  if (!m || !(await store.approveMember(id, new Date()))) return;
   await logEvent("approved", `Участие подтверждено: ${m.pseudonym}`, id);
   revalidatePath("/council");
 }
@@ -75,11 +74,7 @@ export async function setRoleAction(formData: FormData): Promise<void> {
   if (!m || m.status !== "active") return;
   const current = (m.role ?? "member") as Role;
   if (current === role) return;
-  if (current === "council") {
-    const councils = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
-    if (councils.length <= 1) return;
-  }
-  await store.updateMember(id, { role });
+  if ((await store.setMemberRole(id, role)) !== "ok") return;
   await logEvent("role_changed", `Роль ${m.pseudonym}: ${ROLE_NAMES[current]} → ${ROLE_NAMES[role]} (${me.pseudonym})`, id);
   revalidatePath("/council");
 }

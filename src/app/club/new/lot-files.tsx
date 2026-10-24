@@ -65,6 +65,11 @@ export function LotFiles({ initialPhotos = [], initialDocs = [] }: { initialPhot
     setError("");
     setBusy(true);
     for (const f of Array.from(files).slice(0, LIMITS.doc.max - docs.length)) {
+      // Больше лимита Vercel отрежет запрос ещё до сервера, поэтому проверяем здесь и говорим понятно.
+      if (f.size > LIMITS.doc.bytes) {
+        setError(`«${f.name}» больше 4 МБ. Сожмите PDF или загрузите фото страниц`);
+        continue;
+      }
       try {
         const key = await send(f, f.name, "doc");
         setDocs((d) => [...d, { key, name: f.name }]);

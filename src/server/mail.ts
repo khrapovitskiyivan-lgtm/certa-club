@@ -8,23 +8,28 @@ const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data")
 
 async function sendViaProvider(to: string, subject: string, text: string): Promise<void> {
   // Ошибки не пробрасываем и пишем без содержимого письма: в нём может быть ссылка входа.
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from: process.env.MAIL_FROM,
-        to: [to],
-        subject,
-        text,
-        // Ответ участника уходит в живой ящик клуба (MAIL_REPLY_TO), а не на адрес отправки.
-        ...(process.env.MAIL_REPLY_TO ? { reply_to: process.env.MAIL_REPLY_TO } : {}),
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) console.error(`[почта] не отправлено: ${res.status}`);
-  } catch (e) {
-    console.error(`[почта] не отправлено: ${e instanceof Error ? e.name : "ошибка"}`);
+  // Один повтор при сбое сети или ответе 5xx: иначе участник ждёт ссылку входа, которая не придёт.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          from: process.env.MAIL_FROM,
+          to: [to],
+          subject,
+          text,
+          // Ответ участника уходит в живой ящик клуба (MAIL_REPLY_TO), а не на адрес отправки.
+          ...(process.env.MAIL_REPLY_TO ? { reply_to: process.env.MAIL_REPLY_TO } : {}),
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) return;
+      console.error(`[почта] не отправлено: ${res.status}, попытка ${attempt}`);
+      if (res.status < 500) return;
+    } catch (e) {
+      console.error(`[почта] не отправлено: ${e instanceof Error ? e.name : "ошибка"}, попытка ${attempt}`);
+    }
   }
 }
 

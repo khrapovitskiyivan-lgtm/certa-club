@@ -29,3 +29,12 @@ describe("модерация по версии лота", () => {
     expect(await fileStore.updateListingIf("l1", ["pending"], { status: "rejected" }, 1)).toBe(false);
   });
 });
+
+describe("контракт хранилища", () => {
+  it("цена, подтверждение, роли, повтор почты", async () => {
+    
+    const { fileStore } = await import("./store-file");
+    const { runStoreContract } = await import("./store-contract");
+    await runStoreContract(fileStore, "f");
+  });
+});

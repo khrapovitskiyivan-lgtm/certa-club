@@ -43,3 +43,12 @@ a {
   outline: 1px solid var(--accent);
   outline-offset: 4px;
 }
+
+/* На телефоне поля не мельче 16px: иначе iPhone при фокусе увеличивает страницу. */
+@media (max-width: 720px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

@@ -33,3 +33,12 @@ describe.skipIf(!url)("pgStore: модерация лотов", () => {
     expect((await pgStore.getListing(id))?.docs?.[0].name).toBe("Паспорт.pdf");
   });
 });
+
+describe.skipIf(!url)("контракт хранилища", () => {
+  it("цена, подтверждение, роли, повтор почты", async () => {
+    process.env.DATABASE_URL = url;
+    const { pgStore } = await import("./store-pg");
+    const { runStoreContract } = await import("./store-contract");
+    await runStoreContract(pgStore, "p");
+  });
+});

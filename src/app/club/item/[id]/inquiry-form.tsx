@@ -7,7 +7,7 @@ import s from "../../../invite/invite.module.css";
 export function InquiryForm({ id, kind }: { id: string; kind: "offer" | "request" }) {
   const [state, action, pending] = useActionState<InquiryState, FormData>(inquire, {});
   if (state.done) {
-    return <p className={s.lead}>Отклик передан куратору клуба. Он свяжется с вами и с автором и организует следующий шаг.</p>;
+    return <p className={s.lead}>Отклик передан куратору клуба. Он свяжется с вами по почте или телефону из анкеты. Автор не увидит вашего имени без вашего согласия.</p>;
   }
   return (
     <form action={action} className={s.form} noValidate>

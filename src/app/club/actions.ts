@@ -36,7 +36,7 @@ function parseForm(kind: Listing["kind"], formData: FormData, m: Member): { fiel
         category: d.category,
         title: d.title,
         description: d.description,
-        amount: d.priceOnRequest ? undefined : d.price,
+        amount: d.priceOnRequest ? null : (d.price ?? null),
         onRequest: Boolean(d.priceOnRequest),
         currency: d.currency,
         quiet: Boolean(d.quiet),
@@ -50,7 +50,7 @@ function parseForm(kind: Listing["kind"], formData: FormData, m: Member): { fiel
   const v = validateRequest(values);
   if (!v.ok) return { errors: v.errors, values };
   const d = v.data;
-  return { fields: { category: d.category, title: d.title, description: d.description, amount: d.budget, currency: d.currency, country: d.country, city: d.city } };
+  return { fields: { category: d.category, title: d.title, description: d.description, amount: d.budget ?? null, currency: d.currency, country: d.country, city: d.city } };
 }
 
 // Письмо совету о лоте на проверке. Почта не должна задерживать ответ участнику.

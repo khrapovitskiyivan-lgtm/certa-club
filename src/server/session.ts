@@ -2,6 +2,7 @@
 // Два вида: полная сессия и короткий «полувход» между паролем и вторым фактором.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { store } from "./store";
 
 const SESSION = { name: "certa_session", ttl: 60 * 60 * 24 * 30 };
 const PENDING = { name: "certa_pending", ttl: 60 * 10 };
@@ -34,6 +35,10 @@ async function setToken(kind: typeof SESSION, purpose: string, memberId: string)
 }
 
 async function readToken(kind: typeof SESSION, purpose: string): Promise<string | null> {
+  return (await readTokenFull(kind, purpose))?.id ?? null;
+}
+
+async function readTokenFull(kind: typeof SESSION, purpose: string): Promise<{ id: string; iat: number } | null> {
   const raw = (await cookies()).get(kind.name)?.value;
   if (!raw) return null;
   const i = raw.lastIndexOf(".");
@@ -43,11 +48,18 @@ async function readToken(kind: typeof SESSION, purpose: string): Promise<string 
   if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null;
   const [p, id, exp] = payload.split(".");
   if (p !== purpose || !id || Number(exp) < Date.now() / 1000) return null;
-  return id;
+  return { id, iat: Number(exp) - kind.ttl };
 }
 
 export const startSession = (memberId: string) => setToken(SESSION, "s", memberId);
-export const sessionMemberId = () => readToken(SESSION, "s");
+// Сессия действительна, только если выдана после последнего «выхода везде» (смены пароля).
+export async function sessionMemberId(): Promise<string | null> {
+  const t = await readTokenFull(SESSION, "s");
+  if (!t) return null;
+  const m = await store.getMember(t.id);
+  if (!m || t.iat < (m.sessionsValidFrom ?? 0)) return null;
+  return t.id;
+}
 
 export const startPending = (memberId: string) => setToken(PENDING, "p", memberId);
 export const pendingMemberId = () => readToken(PENDING, "p");

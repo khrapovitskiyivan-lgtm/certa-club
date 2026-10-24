@@ -14,7 +14,8 @@ function sql(): postgres.Sql {
   if (!client) {
     const url = process.env.DATABASE_URL!;
     // Удалённая база только с проверкой сертификата и имени хоста; без TLS только локальная.
-    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(url).hostname);
+    // CERTA_DB_SSL=disable: база в той же закрытой сети Docker на своём сервере (docker-compose).
+    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(url).hostname) || process.env.CERTA_DB_SSL === "disable";
     client = postgres(url, { max: 5, onnotice: () => {}, ssl: local ? false : "verify-full" });
   }
   return client;
@@ -39,6 +40,9 @@ function schema(): Promise<void> {
 
 type Json = Parameters<postgres.Sql["json"]>[0];
 const j = (v: unknown) => sql().json(v as Json);
+
+// Откат транзакции регистрации, если почту успели занять параллельно.
+class EmailTaken extends Error {}
 
 export const pgStore: Store = {
   async addListing(l) {
@@ -216,6 +220,26 @@ export const pgStore: Store = {
     return rows.length > 0;
   },
 
+  async approveMember(id, now) {
+    await schema();
+    const rows = await sql()`update members set data = data || ${j({ status: "active", activatedAt: now.toISOString() })}
+      where id = ${id} and data->>'status' = 'kyc_submitted' returning id`;
+    return rows.length > 0;
+  },
+
+  async setMemberRole(id, role) {
+    await schema();
+    return sql().begin(async (tx) => {
+      // Блокируем всех членов совета: два одновременных понижения не оставят совет пустым.
+      const council = await tx`select id from members where data->>'role' = 'council' and data->>'status' = 'active' for update`;
+      const m = await tx`select data from members where id = ${id} and data->>'status' = 'active' for update`;
+      if (!m.length) return "missing" as const;
+      if ((m[0].data as Member).role === "council" && role !== "council" && council.length <= 1) return "last_council" as const;
+      await tx`update members set data = data || ${tx.json({ role })} where id = ${id}`;
+      return "ok" as const;
+    });
+  },
+
   async submitVerification(id, v) {
     await schema();
     const rows = await sql()`update members set data = data || ${j({ verification: v, status: "kyc_submitted" })}
@@ -233,8 +257,14 @@ export const pgStore: Store = {
       const taken = await tx`select 1 from members where email = ${member.email}`;
       if (taken.length) return "email_taken" as const;
       await tx`update invites set data = data || ${tx.json({ usedAt: now.toISOString() })} where code_hash = ${codeHash}`;
-      await tx`insert into members (id, email, data) values (${member.id}, ${member.email}, ${tx.json(member as unknown as Json)})`;
+      // Одновременная регистрация той же почты по другому приглашению: уникальный индекс, а не ошибка 500.
+      const ins = await tx`insert into members (id, email, data) values (${member.id}, ${member.email}, ${tx.json(member as unknown as Json)})
+        on conflict (email) do nothing returning id`;
+      if (!ins.length) throw new EmailTaken();
       return "ok" as const;
+    }).catch((e) => {
+      if (e instanceof EmailTaken) return "email_taken" as const;
+      throw e;
     });
   },
 };

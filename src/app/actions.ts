@@ -28,12 +28,14 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
   const entry = classifyEntry(raw);
   const now = Date.now();
   const ip = await clientIp();
-  if (!inviteGlobalLimiter.hit("all", now) || (ip && !inviteLimiter.hit(ip, now))) {
-    return { error: "Слишком много попыток. Попробуйте позже" };
-  }
   if (entry.kind === "invalid") return { error: "Проверьте код приглашения или почту" };
 
   if (entry.kind === "code") {
+    // Общий потолок только на перебор кодов приглашения: вход участников по почте он не трогает,
+    // иначе посторонний мог бы исчерпать его и закрыть вход всему клубу.
+    if (!inviteGlobalLimiter.hit("all", now) || (ip && !inviteLimiter.hit(ip, now))) {
+      return { error: "Слишком много попыток. Попробуйте позже" };
+    }
     const r = checkInvite(await store.listInvites(), entry.code, new Date());
     if (!r.ok) return { error: "Приглашение не найдено или уже недействительно" };
     redirect(`/invite/${entry.code}`);

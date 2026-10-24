@@ -67,7 +67,8 @@ export type Listing = {
   title: string;
   description: string;
   // offer: цена или «по запросу»; request: бюджет (необязателен).
-  amount?: number;
+  // null: цену или бюджет убрали при правке (в Postgres undefined не стирает старое значение).
+  amount?: number | null;
   currency: Currency;
   onRequest?: boolean;
   // Тихий лот: виден только автору и совету, куратор предлагает его лично.
@@ -138,7 +139,7 @@ export function rejectText(reason: string, note: string): string | null {
   return n ? `${REJECT_REASONS[reason as RejectReason]}. ${n}` : REJECT_REASONS[reason as RejectReason];
 }
 
-export function formatAmount(amount: number | undefined, currency: Currency): string {
-  if (amount === undefined) return "";
+export function formatAmount(amount: number | null | undefined, currency: Currency): string {
+  if (amount == null) return "";
   return `${amount.toLocaleString("ru-RU")} ${CURRENCIES[currency]}`;
 }

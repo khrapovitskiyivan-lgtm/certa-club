@@ -14,6 +14,8 @@ export type Member = {
   about: string;
   // Устаревшее: вход по паролю заменён на passkey; поле остаётся у ранних записей.
   passwordHash?: string;
+  // Сессии, выданные раньше этого момента (секунды Unix), недействительны: смена пароля выходит со всех устройств.
+  sessionsValidFrom?: number;
   invitedAs: string;
   // KYC проходит сразу после анкеты; доступ к клубу после подтверждения советом.
   status: "awaiting_kyc" | "kyc_submitted" | "active";
@@ -99,6 +101,10 @@ export type Store = {
   findByEmail(email: string): Promise<Member | undefined>;
   listMembers(): Promise<Member[]>;
   updateMember(id: string, patch: Partial<Omit<Member, "id">>): Promise<boolean>;
+  // Подтверждение участия атомарно: только из статуса kyc_submitted, повторное нажатие ничего не делает.
+  approveMember(id: string, now: Date): Promise<boolean>;
+  // Смена роли атомарно: последнего члена совета снять нельзя даже при одновременных запросах.
+  setMemberRole(id: string, role: "member" | "expert" | "council"): Promise<"ok" | "last_council" | "missing">;
   submitVerification(id: string, v: Verification): Promise<boolean>;
   // Помечает приглашение использованным и создаёт участника одной операцией.
   redeem(codeHash: string, member: Member, now: Date): Promise<"ok" | "unavailable" | "email_taken">;
