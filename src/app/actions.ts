@@ -7,7 +7,8 @@ import { createLoginLink, classifyEntry, LINK_TTL_MIN } from "@/core/entry";
 import { checkInvite, hashCode, normalizeCode } from "@/core/invites";
 import { validateRegistration, type FieldErrors } from "@/core/registration";
 import { validateVerification, type VerificationErrors } from "@/core/verification";
-import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
+import { clientIp, emailLinkLimiter,
+  linkIpLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { hashPassword, verifyPassword } from "@/server/password";
 import { safeNext } from "@/core/next-path";
@@ -62,7 +63,8 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
   // «Забыли пароль?»: ответ одинаковый всегда, письмо уходит только настоящему участнику.
   // Поиск участника и отправка письма идут после ответа (after): время ответа не зависит
   // от того, есть ли такая почта в клубе и как быстро отвечает почтовый сервис.
-  if (emailLinkLimiter.hit(entry.email, now)) {
+  // Лимит и по почте, и по адресу клиента: с одного адреса не разослать ссылки по списку почт.
+  if ((!ip || linkIpLimiter.hit(ip, now)) && emailLinkLimiter.hit(entry.email, now)) {
     const email = entry.email;
     after(async () => {
       const m = await store.findByEmail(email);

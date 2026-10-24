@@ -11,6 +11,8 @@ export const loginIpLimiter = createLimiter(30, 15 * 60 * 1000);
 // Общий потолок на ввод кодов приглашения со всех адресов вместе.
 // Письма со ссылкой входа: не больше трёх на почту за 15 минут.
 export const emailLinkLimiter = createLimiter(3, 15 * 60 * 1000);
+// Запросы ссылки входа с одного адреса клиента: не больше 10 за 15 минут.
+export const linkIpLimiter = createLimiter(10, 15 * 60 * 1000);
 export const inviteGlobalLimiter = createLimiter(200, 15 * 60 * 1000);
 
 // X-Forwarded-For задаёт клиент. Доверяем только последней записи, которую добавил наш прокси,
