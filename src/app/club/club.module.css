@@ -321,3 +321,47 @@
   gap: 4px;
   margin-bottom: 32px;
 }
+
+/* Сделка у сторон: текущий этап крупно, ниже путь из шагов. */
+.deal {
+  padding: 28px 0 32px;
+  border-bottom: 1px solid var(--line);
+}
+
+.dealNow {
+  font-family: var(--font-serif), serif;
+  font-size: 22px;
+  font-style: italic;
+  margin: 10px 0 4px;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.step_done {
+  color: var(--ink-2);
+}
+
+.step_done::before {
+  content: "✓ ";
+  color: var(--accent);
+}
+
+.step_current {
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent);
+}
+
+.step_todo {
+  color: var(--ink-2);
+  opacity: 0.55;
+}
