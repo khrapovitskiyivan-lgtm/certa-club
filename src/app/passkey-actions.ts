@@ -17,12 +17,11 @@ import {
   clearPending,
   linkedMemberId,
   registrationMemberId,
-  sessionMemberId,
   setChallenge,
-  startSession,
   takeChallenge,
 } from "@/server/session";
 import { store, type Member } from "@/server/store";
+import { freshMember, startMemberSession } from "@/server/auth";
 
 type Result = { ok: true; next: string } | { ok: false; error: string };
 
@@ -31,12 +30,12 @@ function home(m: Member): string {
 }
 
 // Кто вправе добавить ключ:
-// - уже вошедший по ключу участник (новое устройство добавляется из действующей сессии);
+// - участник, вошедший не раньше 10 минут назад: украденная старая сессия не даёт привязать свой ключ;
 // - только что зарегистрированный или пришедший по ссылке из письма, но лишь пока ключей у него нет.
 // Иначе захват почты позволил бы привязать свой ключ к чужому аккаунту.
 async function enrollingMemberId(): Promise<string | null> {
-  const session = await sessionMemberId();
-  if (session) return session;
+  const fresh = await freshMember();
+  if (fresh) return fresh.id;
   const id = (await registrationMemberId()) ?? (await linkedMemberId());
   if (!id) return null;
   return (await store.listCredentials(id)).length === 0 ? id : null;
@@ -104,7 +103,7 @@ export async function passkeyRegistrationVerify(response: RegistrationResponseJS
   );
   await logEvent("passkey_added", `Добавлен ключ входа: ${m.pseudonym}`, m.id);
   await clearPending();
-  await startSession(m.id);
+  await startMemberSession(m.id);
   return { ok: true, next: home(m) };
 }
 
@@ -143,6 +142,6 @@ export async function passkeyAuthenticationVerify(response: AuthenticationRespon
   } catch {
     return { ok: false, error: "Не удалось подтвердить вход" };
   }
-  await startSession(m.id);
+  if (!(await startMemberSession(m.id))) return { ok: false, error: "Доступ закрыт. Свяжитесь с куратором клуба" };
   return { ok: true, next: home(m) };
 }

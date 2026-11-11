@@ -3,6 +3,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { createInvite } from "@/core/invites";
 import { store } from "@/server/store";
+import { baseUrl } from "@/server/base-url";
 
 export type SetupState = { link?: string; error?: string };
 
@@ -23,6 +24,6 @@ export async function createFirstInvite(_prev: SetupState, formData: FormData): 
   const { code, invite } = createInvite(name, new Date(), 2);
   const ok = await store.addFirstInvite({ ...invite, council: true });
   if (!ok) return { error: "Клуб уже настроен" };
-  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  const base = baseUrl();
   return { link: `${base}/invite/${code}` };
 }

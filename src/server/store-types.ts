@@ -28,6 +28,10 @@ export type Member = {
   // expert: даёт оценку и заключения по экспертизе (модуль экспертизы впереди).
   role?: "member" | "expert" | "council";
   activatedAt?: string;
+  // Версия сессий: увеличивается при смене пароля, «выйти везде» и блокировке.
+  sessionVersion?: number;
+  // Блокировка советом: вход и действующие сессии не работают.
+  blockedAt?: string | null;
   createdAt: string;
 };
 
@@ -88,6 +92,9 @@ export type Store = {
   getInquiry(id: string): Promise<Inquiry | undefined>;
   updateInquiry(id: string, patch: Partial<Pick<Inquiry, "status" | "stage" | "note" | "stageAt">>): Promise<boolean>;
   addEvent(e: ClubEvent): Promise<void>;
+  // Счётчик попыток в скользящем окне, общий для всех экземпляров сервера. true: попытка разрешена.
+  hitLimit(key: string, max: number, windowMs: number, nowMs: number): Promise<boolean>;
+  resetLimit(key: string): Promise<void>;
   listEvents(limit: number): Promise<ClubEvent[]>;
   // Отзыв ещё не использованного приглашения.
   revokeInvite(codeHash: string, now: Date): Promise<boolean>;

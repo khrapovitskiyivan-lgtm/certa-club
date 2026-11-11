@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { currentMember } from "@/server/auth";
 import { ChangePasswordForm } from "./form";
+import { logoutEverywhere } from "../../auth-actions";
 import { AppHeader } from "../../app-header";
 import s from "../../invite/invite.module.css";
 
@@ -28,6 +29,15 @@ async function Content() {
       <h1 className={s.title}>Пароль</h1>
       <p className={s.lead}>Новый пароль для входа по почте ({me.email}).</p>
       <ChangePasswordForm hasPassword={Boolean(me.passwordHash)} email={me.email} />
+      <h2 className={s.title} style={{ fontSize: 24, marginTop: 48 }}>
+        Все устройства
+      </h2>
+      <p className={s.lead}>Если телефон или компьютер потерян, выйдите из клуба везде. Войти заново можно по почте и паролю.</p>
+      <form action={logoutEverywhere}>
+        <button type="submit" className={s.backBtn}>
+          Выйти на всех устройствах
+        </button>
+      </form>
     </>
   );
 }

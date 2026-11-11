@@ -5,4 +5,16 @@ import type { Store } from "./store-types.ts";
 
 export type { ClubEvent, Credential, Inquiry, Member, Store, Verification } from "./store-types.ts";
 
-export const store: Store = process.env.DATABASE_URL ? pgStore : fileStore;
+// В проде без базы не подменяем её файлом молча: на сервере файл пропал бы при перезапуске,
+// а пустое хранилище снова открыло бы первичную настройку. Ошибка возникает при первом обращении.
+const missingDb = new Proxy({} as Store, {
+  get() {
+    throw new Error("DATABASE_URL не задан: в production файловое хранилище не используется");
+  },
+});
+
+export const store: Store = process.env.DATABASE_URL
+  ? pgStore
+  : process.env.NODE_ENV === "production" && process.env.CERTA_ALLOW_FILE_STORE !== "1"
+    ? missingDb
+    : fileStore;

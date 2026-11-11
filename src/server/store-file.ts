@@ -6,17 +6,21 @@ import type { LoginLink } from "../core/entry";
 import type { Listing } from "../core/listing";
 import type { ClubEvent, Credential, Inquiry, Member, Store, Verification } from "./store-types";
 
-type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[]; listings?: Listing[]; inquiries?: Inquiry[] };
+type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[]; listings?: Listing[]; inquiries?: Inquiry[]; limits?: Record<string, number[]> };
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 const FILE = path.join(DATA_DIR, "store.json");
 
 async function load(): Promise<Data> {
+  // Пустая база только если файла нет. Битый файл не считаем пустым: иначе следующая запись затёрла бы данные.
+  let text: string;
   try {
-    return JSON.parse(await readFile(FILE, "utf8")) as Data;
-  } catch {
-    return { invites: [], members: [] };
+    text = await readFile(FILE, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { invites: [], members: [] };
+    throw e;
   }
+  return JSON.parse(text) as Data;
 }
 
 async function save(data: Data): Promise<void> {
@@ -92,6 +96,27 @@ export const fileStore: Store = {
       Object.assign(i, patch);
       await save(d);
       return true;
+    });
+  },
+  hitLimit(key, max, windowMs, nowMs) {
+    return exclusive(async () => {
+      const d = await load();
+      const limits = (d.limits ??= {});
+      const recent = (limits[key] ?? []).filter((t) => nowMs - t < windowMs);
+      const ok = recent.length < max;
+      if (ok) recent.push(nowMs);
+      limits[key] = recent;
+      await save(d);
+      return ok;
+    });
+  },
+  resetLimit(key) {
+    return exclusive(async () => {
+      const d = await load();
+      if (d.limits?.[key]) {
+        delete d.limits[key];
+        await save(d);
+      }
     });
   },
   addEvent(e) {

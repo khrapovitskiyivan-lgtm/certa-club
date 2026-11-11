@@ -6,10 +6,11 @@ import { after } from "next/server";
 import { rejectText, type Listing } from "@/core/listing";
 import { createInvite } from "@/core/invites";
 import { CHECK_METHODS, DEAL_STAGES, isCheckMethod, isDealStage } from "@/core/deal";
-import { currentCouncil } from "@/server/auth";
+import { currentCouncil, revokeSessions } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { store } from "@/server/store";
+import { baseUrl } from "@/server/base-url";
 
 export type InviteState = { error?: string; link?: string; code?: string; name?: string };
 
@@ -26,7 +27,7 @@ export async function approveMember(formData: FormData): Promise<void> {
   const now = new Date().toISOString();
   await store.updateMember(id, { status: "active", activatedAt: now, checkedBy: me.id, checkedAt: now, checkMethod: method, checkNote: note || undefined });
   await logEvent("approved", `Участие подтверждено: ${m.pseudonym}, ${CHECK_METHODS[method].toLowerCase()}${note ? ` (${note})` : ""}, решил ${me.pseudonym}`, id);
-  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  const base = baseUrl();
   after(() =>
     sendMail(
       m.email,
@@ -48,7 +49,7 @@ export async function issueInvite(_prev: InviteState, formData: FormData): Promi
   const { code, invite } = createInvite(name, new Date(), days);
   await store.addInvite(invite);
   await logEvent("invite_created", `Создано приглашение «${invite.inviteeName}» на ${days} дн.`);
-  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  const base = baseUrl();
   revalidatePath("/council");
   // Код показывается один раз: в хранилище остаётся только хеш.
   return { code, name: invite.inviteeName, link: `${base}/invite/${code}` };
@@ -98,6 +99,26 @@ export async function setRoleAction(formData: FormData): Promise<void> {
   }
   await store.updateMember(id, { role });
   await logEvent("role_changed", `Роль ${m.pseudonym}: ${ROLE_NAMES[current]} → ${ROLE_NAMES[role]} (${me.pseudonym})`, id);
+  revalidatePath("/council");
+}
+
+// Блокировка участника: все его сессии гаснут сразу, вход закрыт. Себя заблокировать нельзя,
+// поэтому в совете всегда остаётся хотя бы один незаблокированный член.
+export async function setBlockedAction(formData: FormData): Promise<void> {
+  const me = await currentCouncil();
+  if (!me) return;
+  const id = String(formData.get("id") ?? "");
+  const block = formData.get("block") === "1";
+  if (id === me.id) return;
+  const m = await store.getMember(id);
+  if (!m || Boolean(m.blockedAt) === block) return;
+  if (block) {
+    await store.updateMember(id, { blockedAt: new Date().toISOString() });
+    await revokeSessions(m);
+  } else {
+    await store.updateMember(id, { blockedAt: null });
+  }
+  await logEvent(block ? "member_blocked" : "member_unblocked", `${block ? "Заблокирован" : "Разблокирован"}: ${m.pseudonym} (${me.pseudonym})`, id);
   revalidatePath("/council");
 }
 
@@ -223,7 +244,7 @@ function formRev(formData: FormData): number {
 async function mailAuthor(l: Listing, subject: string, text: string) {
   const author = await store.getMember(l.authorId);
   if (!author) return;
-  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  const base = baseUrl();
   after(() => sendMail(author.email, subject, `${text}\n\nОткрыть лот: ${base}/club/item/${l.id}`));
 }
 

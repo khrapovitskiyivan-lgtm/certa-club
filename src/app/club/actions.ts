@@ -5,11 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { validateOffer, validateRequest, visibleTo, type FieldErrors, type Listing } from "@/core/listing";
-import { currentMember } from "@/server/auth";
+import { currentMember, inquiryLimiter } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { store, type Member } from "@/server/store";
 import { cleanName, fileUrl, ownKeys } from "@/core/upload";
+import { baseUrl } from "@/server/base-url";
 
 // Витрина доступна только подтверждённым участникам.
 async function activeMember(): Promise<Member | null> {
@@ -56,7 +57,7 @@ function parseForm(kind: Listing["kind"], formData: FormData, m: Member): { fiel
 // Письмо совету о лоте на проверке. Почта не должна задерживать ответ участнику.
 function notifyCouncil(l: Listing, again: boolean) {
   after(async () => {
-    const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+    const base = baseUrl();
     const council = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
     for (const c of council) {
       await sendMail(
@@ -147,6 +148,7 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
   // Тот же доступ, что и на чтение: тихий лот недоступен тем, кто его не видит.
   if (!l || l.status !== "active" || !visibleTo(l, m.id, m.role === "council")) return { error: "Объявление снято" };
   if (l.authorId === m.id) return { error: "Это ваше объявление" };
+  if (!(await inquiryLimiter.hit(m.id))) return { error: "Слишком много откликов. Попробуйте позже" };
   const message = String(formData.get("message") ?? "").trim().slice(0, 1000);
   await store.addInquiry({
     id: randomUUID(),
@@ -168,7 +170,7 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
   );
   // Письма: совету, чтобы отклик не потерялся, и автору, без имени того, кто откликнулся.
   after(async () => {
-    const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+    const base = baseUrl();
     const what = l.kind === "offer" ? "запрос по лоту" : "отклик «Есть у меня» на запрос";
     const council = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
     for (const c of council) {

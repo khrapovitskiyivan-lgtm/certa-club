@@ -7,13 +7,14 @@ import { createLoginLink, classifyEntry, LINK_TTL_MIN } from "@/core/entry";
 import { checkInvite, hashCode, normalizeCode } from "@/core/invites";
 import { validateRegistration, type FieldErrors } from "@/core/registration";
 import { validateVerification, type VerificationErrors } from "@/core/verification";
-import { clientIp, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter } from "@/server/auth";
+import { clientIp, currentMember, emailLinkLimiter, inviteGlobalLimiter, inviteLimiter, loginIpLimiter, loginLimiter, startMemberSession } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { hashPassword, verifyPassword } from "@/server/password";
 import { safeNext } from "@/core/next-path";
 import { sendMail } from "@/server/mail";
-import { registrationMemberId, sessionMemberId, startSession } from "@/server/session";
+import { registrationMemberId } from "@/server/session";
 import { store } from "@/server/store";
+import { baseUrl } from "@/server/base-url";
 
 export type CodeState = { error?: string; notice?: string; email?: string };
 
@@ -28,12 +29,13 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
   const entry = classifyEntry(raw);
   const now = Date.now();
   const ip = await clientIp();
-  if (!inviteGlobalLimiter.hit("all", now) || (ip && !inviteLimiter.hit(ip, now))) {
-    return { error: "Слишком много попыток. Попробуйте позже" };
-  }
   if (entry.kind === "invalid") return { error: "Проверьте код приглашения или почту" };
 
+  // Общий потолок только на коды приглашения: перебор кодов не должен закрывать вход по паролю.
   if (entry.kind === "code") {
+    if (!(await inviteGlobalLimiter.hit("all")) || (ip && !(await inviteLimiter.hit(ip)))) {
+      return { error: "Слишком много попыток. Попробуйте позже" };
+    }
     const r = checkInvite(await store.listInvites(), entry.code, new Date());
     if (!r.ok) return { error: "Приглашение не найдено или уже недействительно" };
     redirect(`/invite/${entry.code}`);
@@ -44,23 +46,24 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
     const email = entry.email;
     const password = String(formData.get("password") ?? "");
     if (!password) return { error: "Введите пароль", email };
-    if (!loginLimiter.hit(email, now) || (ip && !loginIpLimiter.hit(ip, now))) {
+    if (!(await loginLimiter.hit(email)) || (ip && !(await loginIpLimiter.hit(ip)))) {
       return { error: "Слишком много попыток. Попробуйте через 15 минут", email };
     }
     const m = await store.findByEmail(email);
     // Хеш проверяем всегда, чтобы время ответа не выдавало, существует ли почта.
     const ok = await verifyPassword(password, m?.passwordHash ?? "scrypt$00$00");
-    if (!m || !ok) return { error: "Неверная почта или пароль", email };
-    loginLimiter.reset(email);
+    // Заблокированному отвечаем так же, как на неверный пароль.
+    if (!m || !ok || m.blockedAt) return { error: "Неверная почта или пароль", email };
+    await loginLimiter.reset(email);
     await logEvent("login", `Вход по паролю: ${m.pseudonym}`, m.id);
-    await startSession(m.id);
+    await startMemberSession(m.id);
     redirect(m.role === "council" ? "/council" : "/club");
   }
 
   // «Забыли пароль?»: ответ одинаковый всегда, письмо уходит только настоящему участнику.
   // Поиск участника и отправка письма идут после ответа (after): время ответа не зависит
   // от того, есть ли такая почта в клубе и как быстро отвечает почтовый сервис.
-  if (emailLinkLimiter.hit(entry.email, now)) {
+  if (await emailLinkLimiter.hit(entry.email)) {
     const email = entry.email;
     after(async () => {
       const m = await store.findByEmail(email);
@@ -68,7 +71,7 @@ export async function enterCode(_prev: CodeState, formData: FormData): Promise<C
       await logEvent("login_link", `Запрошена ссылка входа: ${m.pseudonym}`, m.id);
       const { token, link } = createLoginLink(m.id, new Date());
       await store.addLoginLink(link);
-      const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+      const base = baseUrl();
       await sendMail(
         m.email,
         "Вход в Certa",
@@ -131,7 +134,7 @@ export async function register(code: string, _prev: RegisterState, formData: For
   // Следующий шаг: ключ входа (Face ID). Полная сессия появится только после него.
   await logEvent("registered", `Регистрация: ${d.pseudonym} по приглашению «${check.invite.inviteeName}»`, memberId);
   // Пароль задан: это полноценный вход. Face ID предложим позже, в обычном браузере.
-  await startSession(memberId);
+  await startMemberSession(memberId);
   redirect(check.invite.council ? "/council" : "/club");
 }
 
@@ -139,7 +142,7 @@ export type VerifyState = { errors?: VerificationErrors; formError?: string; val
 
 export async function submitVerification(_prev: VerifyState, formData: FormData): Promise<VerifyState> {
   const values = Object.fromEntries(formData) as Record<string, string>;
-  const id = (await registrationMemberId()) ?? (await sessionMemberId());
+  const id = (await registrationMemberId()) ?? (await currentMember())?.id;
   if (!id) return { formError: "Сессия истекла. Обратитесь к куратору клуба.", values };
 
   const v = validateVerification(values);

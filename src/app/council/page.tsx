@@ -11,6 +11,7 @@ import {
   approveMember,
   createDemoListingsAction,
   deleteUnfinishedAction,
+  setBlockedAction,
   updateDealAction,
   revokeInviteAction,
   withdrawDemoListingsAction,
@@ -225,7 +226,18 @@ async function CouncilContent() {
                     locked={m.role === "council" && active.filter((x) => x.role === "council").length <= 1}
                   />
                 </td>
-                <td>с {fmt(m.activatedAt ?? m.createdAt)}</td>
+                <td>{m.blockedAt ? `заблокирован ${fmt(m.blockedAt)}` : `с ${fmt(m.activatedAt ?? m.createdAt)}`}</td>
+                <td>
+                  {m.id !== me.id && (
+                    <form action={setBlockedAction}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <input type="hidden" name="block" value={m.blockedAt ? "0" : "1"} />
+                      <button type="submit" className={c.danger}>
+                        {m.blockedAt ? "Разблокировать" : "Заблокировать"}
+                      </button>
+                    </form>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

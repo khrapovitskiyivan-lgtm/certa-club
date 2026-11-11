@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { registrationMemberId, sessionMemberId } from "@/server/session";
+import { registrationMemberId } from "@/server/session";
+import { currentMember } from "@/server/auth";
 import { store } from "@/server/store";
 import { VerifyForm } from "./verify-form";
 import s from "../invite/invite.module.css";
@@ -22,7 +23,7 @@ export default function VerifyPage() {
 async function VerifyContent() {
   // Сессия и статус участника читаются только во время запроса.
   await connection();
-  const id = (await registrationMemberId()) ?? (await sessionMemberId());
+  const id = (await registrationMemberId()) ?? (await currentMember())?.id;
   const member = id ? await store.getMember(id) : undefined;
   if (!member) {
     return (
@@ -32,7 +33,7 @@ async function VerifyContent() {
       </>
     );
   }
-  if (await sessionMemberId()) redirect("/club/verify");
+  if (await currentMember()) redirect("/club/verify");
   if (member.status !== "awaiting_kyc") redirect("/welcome");
 
   return (

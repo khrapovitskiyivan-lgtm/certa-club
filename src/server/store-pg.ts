@@ -30,6 +30,8 @@ function schema(): Promise<void> {
     await db`create table if not exists inquiries (id text primary key, created_at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists events (id text primary key, at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists credentials (id text primary key, member_id text not null, data jsonb not null)`;
+    await db`create table if not exists rate_hits (key text not null, at timestamptz not null)`;
+    await db`create index if not exists rate_hits_key_at on rate_hits (key, at)`;
     await db`create table if not exists login_links (
       token_hash text primary key, member_id text not null,
       expires_at timestamptz not null, used_at timestamptz)`;
@@ -94,6 +96,25 @@ export const pgStore: Store = {
     await schema();
     const rows = await sql()`update inquiries set data = data || ${j(patch)} where id = ${id} returning id`;
     return rows.length > 0;
+  },
+
+  async hitLimit(key, max, windowMs, nowMs) {
+    await schema();
+    // Блокировка по ключу на время транзакции: параллельные попытки считаются по очереди.
+    return sql().begin(async (tx) => {
+      await tx`select pg_advisory_xact_lock(hashtext(${key}))`;
+      const since = new Date(nowMs - windowMs);
+      await tx`delete from rate_hits where key = ${key} and at < ${since}`;
+      const [{ n }] = await tx`select count(*)::int as n from rate_hits where key = ${key}`;
+      if (n >= max) return false;
+      await tx`insert into rate_hits (key, at) values (${key}, ${new Date(nowMs)})`;
+      return true;
+    }) as Promise<boolean>;
+  },
+
+  async resetLimit(key) {
+    await schema();
+    await sql()`delete from rate_hits where key = ${key}`;
   },
 
   async addEvent(e) {

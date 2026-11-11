@@ -21,9 +21,10 @@ function sign(payload: string): string {
   return createHmac("sha256", secret()).update(payload).digest("base64url");
 }
 
-async function setToken(kind: typeof SESSION, purpose: string, memberId: string): Promise<void> {
+async function setToken(kind: typeof SESSION, purpose: string, memberId: string, ver?: number): Promise<void> {
   const exp = Math.floor(Date.now() / 1000) + kind.ttl;
-  const payload = `${purpose}.${memberId}.${exp}`;
+  // Версия сессии участника: её увеличение гасит все ранее выданные сессии.
+  const payload = `${purpose}.${memberId}.${exp}${ver === undefined ? "" : `.${ver}`}`;
   (await cookies()).set(kind.name, `${payload}.${sign(payload)}`, {
     httpOnly: true,
     sameSite: "lax",
@@ -34,6 +35,10 @@ async function setToken(kind: typeof SESSION, purpose: string, memberId: string)
 }
 
 async function readToken(kind: typeof SESSION, purpose: string): Promise<string | null> {
+  return (await readTokenFull(kind, purpose))?.id ?? null;
+}
+
+async function readTokenFull(kind: typeof SESSION, purpose: string): Promise<{ id: string; ver: number; issuedAt: number } | null> {
   const raw = (await cookies()).get(kind.name)?.value;
   if (!raw) return null;
   const i = raw.lastIndexOf(".");
@@ -41,13 +46,16 @@ async function readToken(kind: typeof SESSION, purpose: string): Promise<string 
   const sig = Buffer.from(raw.slice(i + 1));
   const expected = Buffer.from(sign(payload));
   if (sig.length !== expected.length || !timingSafeEqual(sig, expected)) return null;
-  const [p, id, exp] = payload.split(".");
+  const [p, id, exp, ver] = payload.split(".");
   if (p !== purpose || !id || Number(exp) < Date.now() / 1000) return null;
-  return id;
+  // Ранние сессии без версии считаются версией 0.
+  return { id, ver: ver === undefined ? 0 : Number(ver), issuedAt: Number(exp) - kind.ttl };
 }
 
-export const startSession = (memberId: string) => setToken(SESSION, "s", memberId);
+// ver: текущая sessionVersion участника (см. startMemberSession в auth.ts).
+export const startSession = (memberId: string, ver = 0) => setToken(SESSION, "s", memberId, ver);
 export const sessionMemberId = () => readToken(SESSION, "s");
+export const sessionToken = () => readTokenFull(SESSION, "s");
 
 export const startPending = (memberId: string) => setToken(PENDING, "p", memberId);
 export const pendingMemberId = () => readToken(PENDING, "p");

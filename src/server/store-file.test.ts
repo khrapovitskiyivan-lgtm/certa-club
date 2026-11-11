@@ -29,3 +29,25 @@ describe("модерация по версии лота", () => {
     expect(await fileStore.updateListingIf("l1", ["pending"], { status: "rejected" }, 1)).toBe(false);
   });
 });
+
+describe("лимиты попыток в хранилище", () => {
+  it("считает попытки в окне и сбрасывается", async () => {
+    const t = 1_000_000;
+    for (let i = 0; i < 3; i++) expect(await fileStore.hitLimit("login:a@b", 3, 1000, t + i)).toBe(true);
+    expect(await fileStore.hitLimit("login:a@b", 3, 1000, t + 10)).toBe(false);
+    // Другой ключ не затронут.
+    expect(await fileStore.hitLimit("login:c@d", 3, 1000, t + 10)).toBe(true);
+    // Окно прошло: снова можно.
+    expect(await fileStore.hitLimit("login:a@b", 3, 1000, t + 2000)).toBe(true);
+    await fileStore.resetLimit("login:a@b");
+    for (let i = 0; i < 3; i++) expect(await fileStore.hitLimit("login:a@b", 3, 1000, t + 2001)).toBe(true);
+  });
+});
+
+describe("битый файл хранилища", () => {
+  it("не читается как пустая база", async () => {
+    const { writeFile } = await import("node:fs/promises");
+    await writeFile(path.join(process.env.CERTA_DATA_DIR!, "store.json"), "{битый", "utf8");
+    await expect(fileStore.isEmpty()).rejects.toThrow();
+  });
+});
