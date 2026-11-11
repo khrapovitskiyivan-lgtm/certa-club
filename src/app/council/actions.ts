@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { rejectText, type Listing } from "@/core/listing";
 import { createInvite } from "@/core/invites";
+import { CHECK_METHODS, DEAL_STAGES, isCheckMethod, isDealStage } from "@/core/deal";
 import { currentCouncil } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
@@ -12,13 +13,29 @@ import { store } from "@/server/store";
 
 export type InviteState = { error?: string; link?: string; code?: string; name?: string };
 
+// Подтверждение участия только с указанием, как совет убедился в личности: решение без следа не принимается.
 export async function approveMember(formData: FormData): Promise<void> {
-  if (!(await currentCouncil())) return;
+  const me = await currentCouncil();
+  if (!me) return;
   const id = String(formData.get("id") ?? "");
+  const method = String(formData.get("checkMethod") ?? "");
+  const note = String(formData.get("checkNote") ?? "").trim().slice(0, 300);
+  if (!isCheckMethod(method)) return;
   const m = await store.getMember(id);
   if (!m || m.status !== "kyc_submitted") return;
-  await store.updateMember(id, { status: "active", activatedAt: new Date().toISOString() });
-  await logEvent("approved", `Участие подтверждено: ${m.pseudonym}`, id);
+  const now = new Date().toISOString();
+  await store.updateMember(id, { status: "active", activatedAt: now, checkedBy: me.id, checkedAt: now, checkMethod: method, checkNote: note || undefined });
+  await logEvent("approved", `Участие подтверждено: ${m.pseudonym}, ${CHECK_METHODS[method].toLowerCase()}${note ? ` (${note})` : ""}, решил ${me.pseudonym}`, id);
+  const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+  after(() =>
+    sendMail(
+      m.email,
+      "Участие в Certa подтверждено",
+      `Экспертный совет подтвердил ваше участие. Теперь вы можете размещать вещи, оставлять запросы и откликаться на лоты.
+
+Витрина клуба: ${base}/club`,
+    ),
+  );
   revalidatePath("/council");
 }
 
@@ -84,11 +101,24 @@ export async function setRoleAction(formData: FormData): Promise<void> {
   revalidatePath("/council");
 }
 
-// Куратор отметил отклик обработанным (связал стороны).
-export async function markInquiryAction(formData: FormData): Promise<void> {
+// Куратор ведёт сделку по отклику: этап и заметка. Каждая смена этапа попадает в журнал.
+export async function updateDealAction(formData: FormData): Promise<void> {
   const me = await currentCouncil();
   if (!me) return;
-  await store.markInquiryHandled(String(formData.get("id") ?? ""));
+  const id = String(formData.get("id") ?? "");
+  const stage = String(formData.get("stage") ?? "");
+  const note = String(formData.get("note") ?? "").trim().slice(0, 1000);
+  if (!isDealStage(stage)) return;
+  const i = await store.getInquiry(id);
+  if (!i) return;
+  const changed = i.stage !== stage;
+  await store.updateInquiry(id, {
+    stage,
+    note,
+    status: stage === "new" ? "new" : "handled",
+    ...(changed ? { stageAt: new Date().toISOString() } : {}),
+  });
+  if (changed) await logEvent("deal_stage", `Сделка «${i.listingTitle}» (${i.fromPseudonym} → ${i.authorPseudonym}): ${DEAL_STAGES[stage]}, ${me.pseudonym}`, me.id);
   revalidatePath("/council");
 }
 

@@ -81,12 +81,17 @@ export const fileStore: Store = {
   async listInquiries() {
     return [...((await load()).inquiries ?? [])].reverse();
   },
-  markInquiryHandled(id) {
+  async getInquiry(id) {
+    return (await load()).inquiries?.find((x) => x.id === id);
+  },
+  updateInquiry(id, patch) {
     return exclusive(async () => {
       const d = await load();
       const i = d.inquiries?.find((x) => x.id === id);
-      if (i) i.status = "handled";
+      if (!i) return false;
+      Object.assign(i, patch);
       await save(d);
+      return true;
     });
   },
   addEvent(e) {

@@ -166,6 +166,27 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
     `${l.kind === "offer" ? "Запрос по лоту" : "«Есть у меня»"}: «${l.title}», от ${m.pseudonym} к ${l.authorPseudonym}`,
     m.id,
   );
+  // Письма: совету, чтобы отклик не потерялся, и автору, без имени того, кто откликнулся.
+  after(async () => {
+    const base = process.env.CERTA_BASE_URL ?? "http://localhost:3000";
+    const what = l.kind === "offer" ? "запрос по лоту" : "отклик «Есть у меня» на запрос";
+    const council = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
+    for (const c of council) {
+      await sendMail(c.email, "Новый отклик", `${m.pseudonym}: ${what} «${l.title}» (${l.authorPseudonym}).
+
+Открыть кабинет совета: ${base}/council`);
+    }
+    const author = await store.getMember(l.authorId);
+    if (author && author.role !== "council") {
+      await sendMail(
+        author.email,
+        l.kind === "offer" ? "Вашей вещью заинтересовались" : "На ваш запрос откликнулись",
+        `Участник клуба откликнулся на «${l.title}». Куратор свяжется с вами и организует следующий шаг.
+
+Открыть: ${base}/club/item/${l.id}`,
+      );
+    }
+  });
   revalidatePath("/council");
   return { done: true };
 }

@@ -84,9 +84,16 @@ export const pgStore: Store = {
     return rows.map((r) => r.data as Inquiry);
   },
 
-  async markInquiryHandled(id) {
+  async getInquiry(id) {
     await schema();
-    await sql()`update inquiries set data = data || ${j({ status: "handled" })} where id = ${id}`;
+    const rows = await sql()`select data from inquiries where id = ${id}`;
+    return rows[0]?.data as Inquiry | undefined;
+  },
+
+  async updateInquiry(id, patch) {
+    await schema();
+    const rows = await sql()`update inquiries set data = data || ${j(patch)} where id = ${id} returning id`;
+    return rows.length > 0;
   },
 
   async addEvent(e) {

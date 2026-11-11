@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import type { Invite } from "@/core/invites";
 import { AGENT_TYPES } from "@/core/verification";
+import { CHECK_METHODS, DEAL_STAGES, isOpenStage, stageOf } from "@/core/deal";
 import { currentCouncil } from "@/server/auth";
 import { store, type Member } from "@/server/store";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import {
   approveMember,
   createDemoListingsAction,
   deleteUnfinishedAction,
-  markInquiryAction,
+  updateDealAction,
   revokeInviteAction,
   withdrawDemoListingsAction,
 } from "./actions";
@@ -56,6 +57,16 @@ function verificationText(m: Member): string {
   return `через агента: ${AGENT_TYPES[v.agentType as keyof typeof AGENT_TYPES] ?? v.agentType}, ${v.agentName}, ${v.agentContact}`;
 }
 
+// Контакты стороны сделки видит только совет: стороны друг друга не знают до договора.
+function Party({ label, pseudonym, m }: { label: string; pseudonym: string; m?: Member }) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd>{m ? `${pseudonym}: ${m.fullName}, ${m.phone}, ${m.email}` : pseudonym}</dd>
+    </>
+  );
+}
+
 // Страница динамическая (connection), поэтому текущее время читается на каждый запрос.
 function inviteStatus(i: Invite): string {
   if (i.usedAt) return "использовано";
@@ -78,7 +89,8 @@ async function CouncilContent() {
   const listings = await store.listListings();
   const demoActive = listings.filter((l) => l.demo && l.status === "active").length;
   const toReview = listings.filter((l) => l.status === "pending").reverse();
-  const openInquiries = inquiries.filter((i) => i.status === "new");
+  const openInquiries = inquiries.filter((i) => isOpenStage(stageOf(i)));
+  const byId = new Map(members.map((m) => [m.id, m]));
   const pending = members.filter((m) => m.status === "kyc_submitted");
   const waitingKyc = members.filter((m) => m.status === "awaiting_kyc");
   const active = members.filter((m) => m.status === "active");
@@ -105,8 +117,19 @@ async function CouncilContent() {
                   Псевдоним {m.pseudonym} · приглашение на имя {m.invitedAs} · {fmt(m.createdAt)}
                 </p>
               </div>
-              <form action={approveMember}>
+              <form action={approveMember} className={c.approve}>
                 <input type="hidden" name="id" value={m.id} />
+                <select name="checkMethod" className={s.select} defaultValue="" required aria-label="Как проверена личность">
+                  <option value="" disabled>
+                    Как проверена личность
+                  </option>
+                  {Object.entries(CHECK_METHODS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                <input name="checkNote" className={s.input} placeholder="Уточнение (необязательно)" maxLength={300} />
                 <button type="submit" className={s.submit}>
                   Подтвердить участие
                 </button>
@@ -136,37 +159,48 @@ async function CouncilContent() {
 
       <section className={c.section}>
         <h2 className={c.h2}>
-          Отклики <span className={c.count}>{openInquiries.length}</span>
+          Отклики и сделки <span className={c.count}>{openInquiries.length}</span>
         </h2>
-        {openInquiries.length === 0 && <p className={s.hint}>Новых откликов на лоты и запросы нет.</p>}
-        <table className={c.table}>
-          <tbody>
-            {openInquiries.map((i) => (
-              <tr key={i.id}>
-                <td className={c.muted}>{fmtTime(i.createdAt)}</td>
-                <td>
-                  <Link href={`/club/item/${i.listingId}`}>«{i.listingTitle}»</Link>
-                  <br />
-                  {i.listingKind === "offer" ? "запрос по лоту" : "«есть у меня»"}: {i.fromPseudonym} → {i.authorPseudonym}
-                  {i.message && (
-                    <>
-                      <br />
-                      <span className={c.muted}>{i.message}</span>
-                    </>
-                  )}
-                </td>
-                <td>
-                  <form action={markInquiryAction}>
-                    <input type="hidden" name="id" value={i.id} />
-                    <button type="submit" className={c.danger} style={{ color: "var(--accent)" }}>
-                      Стороны связаны
-                    </button>
-                  </form>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {openInquiries.length === 0 && <p className={s.hint}>Открытых откликов и сделок нет.</p>}
+        {openInquiries.map((i) => {
+          const stage = stageOf(i);
+          return (
+            <article key={i.id} className={c.card}>
+              <p className={c.name}>
+                <Link href={`/club/item/${i.listingId}`}>«{i.listingTitle}»</Link>
+              </p>
+              <p className={s.hint}>
+                {fmtTime(i.createdAt)} · {i.listingKind === "offer" ? "запрос по лоту" : "«есть у меня»"} · {DEAL_STAGES[stage]}
+                {i.stageAt ? ` с ${fmtTime(i.stageAt)}` : ""}
+              </p>
+              <dl className={c.dl}>
+                <Party label={i.listingKind === "offer" ? "Покупатель" : "Продавец"} pseudonym={i.fromPseudonym} m={byId.get(i.fromId)} />
+                <Party label={i.listingKind === "offer" ? "Продавец" : "Покупатель"} pseudonym={i.authorPseudonym} m={byId.get(i.authorId)} />
+                {i.message && (
+                  <>
+                    <dt>Комментарий</dt>
+                    <dd>{i.message}</dd>
+                  </>
+                )}
+              </dl>
+              {/* Ключ по сохранённым значениям: после действия React сбрасывает форму, новая форма берёт свежие значения. */}
+              <form key={`${stage}|${i.note ?? ""}`} action={updateDealAction} className={c.approve}>
+                <input type="hidden" name="id" value={i.id} />
+                <select name="stage" className={s.select} defaultValue={stage} aria-label="Этап сделки">
+                  {Object.entries(DEAL_STAGES).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+                <input name="note" className={s.input} defaultValue={i.note ?? ""} placeholder="Заметка куратора" maxLength={1000} />
+                <button type="submit" className={c.danger} style={{ color: "var(--accent)" }}>
+                  Сохранить
+                </button>
+              </form>
+            </article>
+          );
+        })}
       </section>
 
       <section className={c.section}>

@@ -2,6 +2,7 @@
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
 import type { Listing } from "../core/listing";
+import type { CheckMethod, DealStage } from "../core/deal";
 
 export type Member = {
   id: string;
@@ -18,6 +19,11 @@ export type Member = {
   // KYC проходит сразу после анкеты; доступ к клубу после подтверждения советом.
   status: "awaiting_kyc" | "kyc_submitted" | "active";
   verification?: Verification;
+  // След решения совета: кто, когда и как убедился в личности.
+  checkedBy?: string;
+  checkedAt?: string;
+  checkMethod?: CheckMethod;
+  checkNote?: string;
   // Роль в клубе: совет подтверждает участников и выдаёт приглашения.
   // expert: даёт оценку и заключения по экспертизе (модуль экспертизы впереди).
   role?: "member" | "expert" | "council";
@@ -62,6 +68,10 @@ export type Inquiry = {
   fromPseudonym: string;
   message: string;
   status: "new" | "handled";
+  // Этап сделки и заметка куратора; у ранних откликов этапа нет (см. stageOf).
+  stage?: DealStage;
+  note?: string;
+  stageAt?: string;
   createdAt: string;
 };
 
@@ -75,7 +85,8 @@ export type Store = {
   updateListingIf(id: string, from: Listing["status"][], patch: Partial<Listing>, rev?: number): Promise<boolean>;
   addInquiry(i: Inquiry): Promise<void>;
   listInquiries(): Promise<Inquiry[]>;
-  markInquiryHandled(id: string): Promise<void>;
+  getInquiry(id: string): Promise<Inquiry | undefined>;
+  updateInquiry(id: string, patch: Partial<Pick<Inquiry, "status" | "stage" | "note" | "stageAt">>): Promise<boolean>;
   addEvent(e: ClubEvent): Promise<void>;
   listEvents(limit: number): Promise<ClubEvent[]>;
   // Отзыв ещё не использованного приглашения.
