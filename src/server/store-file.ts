@@ -4,9 +4,10 @@ import path from "node:path";
 import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
 import type { Listing } from "../core/listing";
+import type { Expert } from "../core/expert";
 import type { ClubEvent, Credential, Inquiry, Member, Store, Verification } from "./store-types";
 
-type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[]; listings?: Listing[]; inquiries?: Inquiry[]; limits?: Record<string, number[]> };
+type Data = { invites: Invite[]; members: Member[]; loginLinks?: LoginLink[]; credentials?: Credential[]; events?: ClubEvent[]; listings?: Listing[]; inquiries?: Inquiry[]; limits?: Record<string, number[]>; experts?: Expert[] };
 
 const DATA_DIR = process.env.CERTA_DATA_DIR ?? path.join(process.cwd(), ".data");
 const FILE = path.join(DATA_DIR, "store.json");
@@ -94,6 +95,32 @@ export const fileStore: Store = {
       const i = d.inquiries?.find((x) => x.id === id);
       if (!i) return false;
       Object.assign(i, patch);
+      await save(d);
+      return true;
+    });
+  },
+  async listExperts() {
+    return (await load()).experts ?? [];
+  },
+  async getExpert(id) {
+    return (await load()).experts?.find((x) => x.id === id);
+  },
+  putExpert(e) {
+    return exclusive(async () => {
+      const d = await load();
+      const list = (d.experts ??= []);
+      const k = list.findIndex((x) => x.id === e.id);
+      if (k >= 0) list[k] = e;
+      else list.push(e);
+      await save(d);
+    });
+  },
+  deleteExpert(id) {
+    return exclusive(async () => {
+      const d = await load();
+      const before = d.experts?.length ?? 0;
+      d.experts = (d.experts ?? []).filter((x) => x.id !== id);
+      if (d.experts.length === before) return false;
       await save(d);
       return true;
     });

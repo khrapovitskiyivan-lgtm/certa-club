@@ -3,6 +3,7 @@ import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
 import type { Listing } from "../core/listing";
 import type { CheckMethod, DealStage } from "../core/deal";
+import type { Expert } from "../core/expert";
 
 export type Member = {
   id: string;
@@ -92,6 +93,11 @@ export type Store = {
   getInquiry(id: string): Promise<Inquiry | undefined>;
   updateInquiry(id: string, patch: Partial<Pick<Inquiry, "status" | "stage" | "note" | "stageAt">>): Promise<boolean>;
   addEvent(e: ClubEvent): Promise<void>;
+  // Эксперты клуба: профили для вкладки «Эксперты», ведёт совет.
+  listExperts(): Promise<Expert[]>;
+  getExpert(id: string): Promise<Expert | undefined>;
+  putExpert(e: Expert): Promise<void>;
+  deleteExpert(id: string): Promise<boolean>;
   // Счётчик попыток в скользящем окне, общий для всех экземпляров сервера. true: попытка разрешена.
   hitLimit(key: string, max: number, windowMs: number, nowMs: number): Promise<boolean>;
   resetLimit(key: string): Promise<void>;

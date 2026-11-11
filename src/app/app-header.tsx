@@ -15,6 +15,7 @@ export function AppHeader({ me, area }: { me: Member; area: "club" | "council" }
       {area === "club" && me.role === "council" && <Link href="/council">Кабинет совета</Link>}
       {area === "council" && <Link href="/club">Витрина</Link>}
       {area === "club" && <Link href="/club/deals">Мои сделки</Link>}
+      <Link href={area === "council" ? "/council/experts" : "/club/experts"}>Эксперты</Link>
       {area === "club" && me.status !== "active" && <Link href="/club/verify">Верификация</Link>}
       <Link href="/club/password">Пароль</Link>
       <form action={logout}>

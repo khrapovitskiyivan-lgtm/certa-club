@@ -5,6 +5,7 @@ import type { Invite } from "../core/invites";
 import type { LoginLink } from "../core/entry";
 import type { Listing } from "../core/listing";
 import type { ClubEvent, Credential, Inquiry, Member, Store } from "./store-types";
+import type { Expert } from "../core/expert";
 
 let client: postgres.Sql | null = null;
 let ready: Promise<void> | null = null;
@@ -30,6 +31,7 @@ function schema(): Promise<void> {
     await db`create table if not exists inquiries (id text primary key, created_at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists events (id text primary key, at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists credentials (id text primary key, member_id text not null, data jsonb not null)`;
+    await db`create table if not exists experts (id text primary key, created_at timestamptz not null, data jsonb not null)`;
     await db`create table if not exists rate_hits (key text not null, at timestamptz not null)`;
     await db`create index if not exists rate_hits_key_at on rate_hits (key, at)`;
     await db`create table if not exists login_links (
@@ -95,6 +97,30 @@ export const pgStore: Store = {
   async updateInquiry(id, patch) {
     await schema();
     const rows = await sql()`update inquiries set data = data || ${j(patch)} where id = ${id} returning id`;
+    return rows.length > 0;
+  },
+
+  async listExperts() {
+    await schema();
+    const rows = await sql()`select data from experts order by created_at`;
+    return rows.map((r) => r.data as Expert);
+  },
+
+  async getExpert(id) {
+    await schema();
+    const rows = await sql()`select data from experts where id = ${id}`;
+    return rows[0]?.data as Expert | undefined;
+  },
+
+  async putExpert(e) {
+    await schema();
+    await sql()`insert into experts (id, created_at, data) values (${e.id}, ${e.createdAt}, ${j(e)})
+      on conflict (id) do update set data = excluded.data`;
+  },
+
+  async deleteExpert(id) {
+    await schema();
+    const rows = await sql()`delete from experts where id = ${id} returning id`;
     return rows.length > 0;
   },
 
