@@ -60,6 +60,32 @@ export function dealSteps(stage: DealStage): { stage: DealStage; state: "done" |
   return DEAL_PATH.map((s, k) => ({ stage: s, state: stage === "closed" || k < at ? "done" : k === at ? "current" : "todo" }));
 }
 
+// Письмо стороне о статусе сделки: роль, текущий этап, следующий шаг и весь путь с отметками.
+// Имён другой стороны и заметок куратора здесь нет по построению: функция их не получает.
+export function dealStatusMail(
+  d: { role: DealRole; pseudonym: string; title: string; stage: DealStage },
+  dealsUrl: string,
+): { subject: string; text: string } {
+  const p = PARTY_STAGES[d.stage];
+  const lines = [
+    `Здравствуйте, ${d.pseudonym}.`,
+    "",
+    `${d.role === "buyer" ? "Вы покупаете" : "Вы продаёте"} «${d.title}».`,
+    `Сейчас: ${p.title.toLowerCase()}.`,
+    p.next,
+  ];
+  if (d.stage !== "cancelled") {
+    lines.push("", "Ход сделки:");
+    dealSteps(d.stage).forEach((st, k) => {
+      const name = st.stage === "new" ? "Отклик" : DEAL_STAGES[st.stage];
+      const mark = st.state === "done" ? "пройдено" : st.state === "current" ? "сейчас" : "";
+      lines.push(`${k + 1}. ${name}${mark ? `: ${mark}` : ""}`);
+    });
+  }
+  lines.push("", `Все ваши сделки: ${dealsUrl}`, "", "Вопросы по сделке задавайте куратору, ответив на это письмо.");
+  return { subject: `Сделка «${d.title}»: ${p.title.toLowerCase()}`, text: lines.join("\n") };
+}
+
 // Как совет убедился в личности при подтверждении участия. Сканы документов клуб не хранит.
 export const CHECK_METHODS = {
   passport_in_person: "Паспорт, лично",

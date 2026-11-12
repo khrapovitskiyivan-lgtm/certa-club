@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { rejectText, type Listing } from "@/core/listing";
 import { createInvite } from "@/core/invites";
-import { CHECK_METHODS, DEAL_STAGES, PARTY_STAGES, isCheckMethod, isDealStage } from "@/core/deal";
+import { CHECK_METHODS, DEAL_STAGES, dealRole, dealStatusMail, isCheckMethod, isDealStage } from "@/core/deal";
 import { currentCouncil, revokeSessions } from "@/server/auth";
 import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
@@ -143,16 +143,14 @@ export async function updateDealAction(formData: FormData): Promise<void> {
     await logEvent("deal_stage", `Сделка «${i.listingTitle}» (${i.fromPseudonym} → ${i.authorPseudonym}): ${DEAL_STAGES[stage]}, ${me.pseudonym}`, me.id);
     // Обеим сторонам письмо о новом этапе; заметка куратора в письмо не попадает.
     if (stage !== "new") {
-      const base = baseUrl();
-      const p = PARTY_STAGES[stage];
+      const url = `${baseUrl()}/club/deals`;
       after(async () => {
         for (const pid of [i.fromId, i.authorId]) {
           const m = await store.getMember(pid);
-          if (m) await sendMail(m.email, `Сделка «${i.listingTitle}»: ${p.title.toLowerCase()}`, `${p.title}.
-
-${p.next}
-
-Все ваши сделки: ${base}/club/deals`);
+          const role = dealRole(i, pid);
+          if (!m || !role) continue;
+          const mail = dealStatusMail({ role, pseudonym: m.pseudonym, title: i.listingTitle, stage }, url);
+          await sendMail(m.email, mail.subject, mail.text);
         }
       });
     }

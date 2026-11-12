@@ -10,6 +10,7 @@ import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { store, type Member } from "@/server/store";
 import { cleanName, fileUrl, ownKeys } from "@/core/upload";
+import { dealRole, dealStatusMail } from "@/core/deal";
 import { baseUrl } from "@/server/base-url";
 
 // Витрина доступна только подтверждённым участникам.
@@ -178,16 +179,16 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
 
 Открыть кабинет совета: ${base}/council`);
     }
+    // Обеим сторонам письмо со статусом сделки «Куратор изучает отклик»; имени другой стороны в нём нет.
+    const deal = { listingKind: l.kind, authorId: l.authorId, fromId: m.id };
+    const url = `${base}/club/deals`;
     const author = await store.getMember(l.authorId);
     if (author && author.role !== "council") {
-      await sendMail(
-        author.email,
-        l.kind === "offer" ? "Вашей вещью заинтересовались" : "На ваш запрос откликнулись",
-        `Участник клуба откликнулся на «${l.title}». Куратор свяжется с вами и организует следующий шаг.
-
-Открыть: ${base}/club/item/${l.id}`,
-      );
+      const mail = dealStatusMail({ role: dealRole(deal, author.id)!, pseudonym: author.pseudonym, title: l.title, stage: "new" }, url);
+      await sendMail(author.email, l.kind === "offer" ? "Вашей вещью заинтересовались" : "На ваш запрос откликнулись", mail.text);
     }
+    const mine = dealStatusMail({ role: dealRole(deal, m.id)!, pseudonym: m.pseudonym, title: l.title, stage: "new" }, url);
+    await sendMail(m.email, "Отклик передан куратору", mine.text);
   });
   revalidatePath("/council");
   return { done: true };
