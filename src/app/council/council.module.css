@@ -230,3 +230,34 @@
 .card > .approve {
   margin-top: 18px;
 }
+
+/* Вкладки кабинета: как вкладки витрины, на телефоне мельче и с переносом. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 8px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab,
+.tabActive {
+  font-family: var(--font-serif), serif;
+  font-size: 24px;
+  padding-bottom: 10px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.tabActive {
+  color: var(--ink);
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: -1px;
+}
+
+@media (max-width: 520px) {
+  .tab,
+  .tabActive {
+    font-size: 20px;
+  }
+}
