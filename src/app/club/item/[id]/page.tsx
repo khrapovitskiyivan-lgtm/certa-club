@@ -13,6 +13,7 @@ import { fileUrl } from "@/core/upload";
 import { VerifyNotice } from "../../verify-notice";
 import s from "../../../invite/invite.module.css";
 import c from "../../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function ItemPage({ params }: PageProps<"/club/item/[id]">) {
   return (
@@ -42,6 +43,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   return (
     <>
       <ClubHeader me={me} />
+      <BackLink href={isOffer ? "/club" : "/club?tab=requests"} label={isOffer ? "Предложения клуба" : "Ищут в клубе"} />
       <article className={c.item}>
         <span className={c.cardCat}>
           {isOffer ? "Предложение" : "Ищут в клубе"} · {CATEGORIES[l.category]}

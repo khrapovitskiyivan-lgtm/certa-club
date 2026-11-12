@@ -6,6 +6,7 @@ import { ChangePasswordForm } from "./form";
 import { logoutEverywhere } from "../../auth-actions";
 import { AppHeader } from "../../app-header";
 import s from "../../invite/invite.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function PasswordPage() {
   return (
@@ -26,6 +27,7 @@ async function Content() {
   return (
     <>
       <AppHeader me={me} area={me.role === "council" ? "council" : "club"} />
+      <BackLink href={me.role === "council" ? "/council" : "/club"} label={me.role === "council" ? "Кабинет совета" : "Витрина"} />
       <h1 className={s.title}>Пароль</h1>
       <p className={s.lead}>Новый пароль для входа по почте ({me.email}).</p>
       <ChangePasswordForm hasPassword={Boolean(me.passwordHash)} email={me.email} />

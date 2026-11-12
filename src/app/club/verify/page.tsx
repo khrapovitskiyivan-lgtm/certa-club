@@ -10,6 +10,7 @@ import { ClubHeader } from "../club-header";
 import { VerifyForm } from "../../verify/verify-form";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 // Кабинет верификации внутри клуба: сюда ведут «Предложить», «Ищу» и отклик на лот, пока участник не подтверждён.
 export default function ClubVerifyPage({ searchParams }: PageProps<"/club/verify">) {
@@ -47,6 +48,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
     <>
       <ClubHeader me={me} />
       <div className={s.narrow} style={{ margin: 0 }}>
+        <BackLink href={next} label="Назад" />
         <p className={c.cardCat}>Кабинет верификации</p>
         {me.status === "active" && (
           <>

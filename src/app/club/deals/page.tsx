@@ -8,6 +8,7 @@ import { store } from "@/server/store";
 import { AppHeader } from "../../app-header";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function DealsPage() {
   return (
@@ -36,6 +37,7 @@ async function Content() {
   return (
     <>
       <AppHeader me={me} area="club" />
+      <BackLink href="/club" label="Витрина" />
       <h1 className={s.title}>Мои сделки</h1>
       <p className={s.lead}>Здесь видно, на каком этапе каждая сделка и что будет дальше. Этап отмечает куратор клуба.</p>
       {deals.length === 0 && (

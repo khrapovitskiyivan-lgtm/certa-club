@@ -1,0 +1,16 @@
+/* Ссылка «назад» над заголовком: служебная надпись малым капсом, как в шапке. */
+.back {
+  display: inline-block;
+  margin: 8px 0 20px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color 300ms var(--ease);
+}
+
+.back:hover,
+.back:focus-visible {
+  color: var(--accent);
+}

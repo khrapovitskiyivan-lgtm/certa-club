@@ -1,10 +1,12 @@
 import { PasskeyLogin, PasswordLogin } from "./forms";
 import s from "../invite/invite.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function LoginPage() {
   return (
     <main className={s.page}>
       <div className={s.narrow}>
+        <BackLink href="/" label="Главная" />
         <p className={s.mark}>Certa</p>
         <h1 className={s.title}>Вход для участников</h1>
         <PasswordLogin />

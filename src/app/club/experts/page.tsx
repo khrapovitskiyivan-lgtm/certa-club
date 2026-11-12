@@ -7,6 +7,7 @@ import { store } from "@/server/store";
 import { AppHeader } from "../../app-header";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function ExpertsPage() {
   return (
@@ -31,6 +32,7 @@ async function Content() {
   return (
     <>
       <AppHeader me={me} area="club" />
+      <BackLink href="/club" label="Витрина" />
       <h1 className={s.title}>Эксперты клуба</h1>
       <p className={s.lead}>
         Перед сделкой вещь осматривает независимый эксперт и даёт письменное заключение о подлинности и состоянии. Эксперт в сделке не

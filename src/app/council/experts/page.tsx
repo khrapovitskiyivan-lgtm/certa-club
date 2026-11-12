@@ -10,6 +10,7 @@ import { deleteExpertAction } from "./actions";
 import { ExpertForm } from "./expert-form";
 import s from "../../invite/invite.module.css";
 import c from "../council.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function CouncilExpertsPage() {
   return (
@@ -32,8 +33,9 @@ async function Content() {
   return (
     <>
       <AppHeader me={me} area="council" />
+      <BackLink href="/council" label="Кабинет совета" />
       <p className={s.hint}>
-        <Link href="/council">Кабинет совета</Link> · <Link href="/club/experts">Как видят участники</Link>
+        <Link href="/club/experts">Как видят участники</Link>
       </p>
       <section className={c.section}>
         <h2 className={c.h2}>

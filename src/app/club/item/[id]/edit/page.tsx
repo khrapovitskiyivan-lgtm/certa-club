@@ -7,6 +7,7 @@ import { ClubHeader } from "../../../club-header";
 import { ListingForm } from "../../../new/listing-form";
 import s from "../../../../invite/invite.module.css";
 import c from "../../../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 // Правка своего лота: после сохранения он снова уходит на проверку совета.
 export default function EditPage({ params }: PageProps<"/club/item/[id]/edit">) {
@@ -32,6 +33,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
     <>
       <ClubHeader me={me} />
       <div className={s.narrow} style={{ margin: 0 }}>
+        <BackLink href={`/club/item/${l.id}`} label="К лоту" />
         <h1 className={s.title}>Исправить лот</h1>
         {l.rejectReason && <p className={s.formError}>Совет вернул лот: {l.rejectReason}</p>}
         <p className={s.lead}>

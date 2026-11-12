@@ -7,6 +7,7 @@ import { ListingForm } from "./listing-form";
 import { VerifyNotice } from "../verify-notice";
 import s from "../../invite/invite.module.css";
 import c from "../club.module.css";
+import { BackLink } from "@/app/back-link";
 
 export default function NewListingPage({ searchParams }: PageProps<"/club/new">) {
   return (
@@ -30,6 +31,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
     <>
       <ClubHeader me={me} />
       <div className={s.narrow} style={{ margin: 0 }}>
+        <BackLink href={kind === "offer" ? "/club" : "/club?tab=requests"} label="Витрина" />
         <h1 className={s.title}>{kind === "offer" ? "Предложить" : "Ищу"}</h1>
         <p className={s.lead}>
           {kind === "offer"
