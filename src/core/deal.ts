@@ -60,6 +60,31 @@ export function dealSteps(stage: DealStage): { stage: DealStage; state: "done" |
   return DEAL_PATH.map((s, k) => ({ stage: s, state: stage === "closed" || k < at ? "done" : k === at ? "current" : "todo" }));
 }
 
+export type DealParty = { pseudonym: string; fullName: string; phone: string; email: string };
+
+// Письмо совету о новом отклике: обе стороны с контактами, чтобы куратор мог сразу позвонить.
+// Уходит только членам совета; сторонам контакты друг друга не показываются.
+export function councilInquiryMail(
+  d: { kind: "offer" | "request"; title: string; message: string; from: DealParty; author: DealParty | null; authorPseudonym: string },
+  councilUrl: string,
+): { subject: string; text: string } {
+  const offer = d.kind === "offer";
+  const who = (label: string, p: DealParty | null, pseudonym: string) =>
+    p ? [`${label}: ${p.pseudonym}`, `  ${p.fullName}`, `  ${p.phone}`, `  ${p.email}`] : [`${label}: ${pseudonym} (тестовый или удалённый автор)`];
+  const lines = [
+    `${offer ? "Запрос по лоту" : "Отклик «Есть у меня» на запрос"} «${d.title}».`,
+    "",
+    ...who(offer ? "Покупатель" : "Продавец", d.from, d.from.pseudonym),
+    "",
+    ...who(offer ? "Продавец" : "Покупатель", d.author, d.authorPseudonym),
+    "",
+    d.message ? `Комментарий: ${d.message}` : "Комментария нет.",
+    "",
+    `Кабинет совета: ${councilUrl}`,
+  ];
+  return { subject: `Новый отклик: «${d.title}»`, text: lines.join("\n") };
+}
+
 // Письмо стороне о статусе сделки: роль, текущий этап, следующий шаг и весь путь с отметками.
 // Имён другой стороны и заметок куратора здесь нет по построению: функция их не получает.
 export function dealStatusMail(

@@ -10,7 +10,7 @@ import { logEvent } from "@/server/events";
 import { sendMail } from "@/server/mail";
 import { store, type Member } from "@/server/store";
 import { cleanName, fileUrl, ownKeys } from "@/core/upload";
-import { dealRole, dealStatusMail } from "@/core/deal";
+import { councilInquiryMail, dealRole, dealStatusMail } from "@/core/deal";
 import { baseUrl } from "@/server/base-url";
 
 // Витрина доступна только подтверждённым участникам.
@@ -169,16 +169,16 @@ export async function inquire(_prev: InquiryState, formData: FormData): Promise<
     `${l.kind === "offer" ? "Запрос по лоту" : "«Есть у меня»"}: «${l.title}», от ${m.pseudonym} к ${l.authorPseudonym}`,
     m.id,
   );
-  // Письма: совету, чтобы отклик не потерялся, и автору, без имени того, кто откликнулся.
+  // Письма: совету с контактами обеих сторон, чтобы отклик не потерялся и куратор мог сразу связаться.
   after(async () => {
     const base = baseUrl();
-    const what = l.kind === "offer" ? "запрос по лоту" : "отклик «Есть у меня» на запрос";
+    const authorMember = (await store.getMember(l.authorId)) ?? null;
     const council = (await store.listMembers()).filter((x) => x.role === "council" && x.status === "active");
-    for (const c of council) {
-      await sendMail(c.email, "Новый отклик", `${m.pseudonym}: ${what} «${l.title}» (${l.authorPseudonym}).
-
-Открыть кабинет совета: ${base}/council`);
-    }
+    const cm = councilInquiryMail(
+      { kind: l.kind, title: l.title, message, from: m, author: authorMember, authorPseudonym: l.authorPseudonym },
+      `${base}/council`,
+    );
+    for (const c of council) await sendMail(c.email, cm.subject, cm.text);
     // Обеим сторонам письмо со статусом сделки «Куратор изучает отклик»; имени другой стороны в нём нет.
     const deal = { listingKind: l.kind, authorId: l.authorId, fromId: m.id };
     const url = `${base}/club/deals`;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dealRole, dealStatusMail, dealSteps, lotStatus, isCheckMethod, isDealStage, isOpenStage, stageOf } from "./deal";
+import { councilInquiryMail, dealRole, dealStatusMail, dealSteps, lotStatus, isCheckMethod, isDealStage, isOpenStage, stageOf } from "./deal";
 
 describe("этапы сделки", () => {
   it("принимает только известные этапы", () => {
@@ -72,5 +72,24 @@ describe("статус своего лота", () => {
     const d = lotStatus({ status: "active" }, [{ status: "new" }, { status: "handled", stage: "contract" }, { status: "handled", stage: "cancelled" }]);
     expect(d.deals).toBe("Откликов: 3, дальше всех: договор");
     expect(lotStatus({ status: "active" }, [{ status: "handled", stage: "closed" }]).deals).toBe("Откликов: 1, закрыто сделок: 1");
+  });
+});
+
+describe("письмо совету о новом отклике", () => {
+  const buyer = { pseudonym: "Коллекционер", fullName: "Тест Покупатель", phone: "+7 (912) 000-00-01", email: "b@x.test" };
+  const seller = { pseudonym: "Хронос", fullName: "Тест Продавец", phone: "+7 (912) 000-00-02", email: "s@x.test" };
+  it("обе стороны с контактами и комментарий", () => {
+    const m = councilInquiryMail({ kind: "offer", title: "Часы", message: "Хочу осмотр", from: buyer, author: seller, authorPseudonym: "Хронос" }, "https://x/council");
+    expect(m.subject).toBe("Новый отклик: «Часы»");
+    expect(m.text).toContain("Покупатель: Коллекционер\n  Тест Покупатель\n  +7 (912) 000-00-01\n  b@x.test");
+    expect(m.text).toContain("Продавец: Хронос\n  Тест Продавец");
+    expect(m.text).toContain("Комментарий: Хочу осмотр");
+    expect(m.text).not.toContain("—");
+  });
+  it("у запроса роли наоборот, тестовый автор без контактов", () => {
+    const m = councilInquiryMail({ kind: "request", title: "Монета", message: "", from: seller, author: null, authorPseudonym: "Демо" }, "u");
+    expect(m.text).toContain("Продавец: Хронос");
+    expect(m.text).toContain("Покупатель: Демо (тестовый или удалённый автор)");
+    expect(m.text).toContain("Комментария нет.");
   });
 });
