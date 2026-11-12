@@ -66,7 +66,9 @@ async function ClubContent({ searchParams }: { searchParams: Params }) {
 
       {mineInReview.length > 0 && (
         <div className={c.review}>
-          <p className={c.cardCat}>Ваши лоты вне витрины</p>
+          <p className={c.cardCat}>
+            Ваши лоты вне витрины · <Link href="/club/lots">все мои лоты</Link>
+          </p>
           {mineInReview.map((l) => (
             <Link key={l.id} href={`/club/item/${l.id}`} className={c.docRow}>
               <span>{l.title}</span>

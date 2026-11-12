@@ -86,6 +86,33 @@ export function dealStatusMail(
   return { subject: `Сделка «${d.title}»: ${p.title.toLowerCase()}`, text: lines.join("\n") };
 }
 
+// Статус своего лота для автора: где лот сейчас и что с откликами. Имён откликнувшихся здесь нет.
+export function lotStatus(
+  l: { status: "pending" | "active" | "rejected" | "withdrawn"; quiet?: boolean; rejectReason?: string | null },
+  deals: { stage?: DealStage; status: "new" | "handled" }[],
+): { label: string; hint: string; deals: string } {
+  const base =
+    l.status === "pending"
+      ? { label: "На проверке у совета", hint: "Решение обычно в течение суток." }
+      : l.status === "rejected"
+        ? { label: "Вернули на доработку", hint: `${l.rejectReason ? `Причина: ${l.rejectReason}. ` : ""}Исправьте лот и отправьте снова.` }
+        : l.status === "withdrawn"
+          ? { label: "Снят", hint: "Лот не виден участникам." }
+          : l.quiet
+            ? { label: "Тихий лот", hint: "Виден только совету, куратор предлагает его лично." }
+            : { label: "На витрине", hint: "Лот видят все участники клуба." };
+  const open = deals.map(stageOf).filter(isOpenStage);
+  const closed = deals.map(stageOf).filter((s) => s === "closed").length;
+  // Самый продвинутый открытый этап: по нему автор понимает, насколько близка продажа.
+  const far = open.sort((a, b) => DEAL_PATH.indexOf(b) - DEAL_PATH.indexOf(a))[0];
+  const parts = [];
+  if (deals.length === 0) parts.push("Откликов пока нет");
+  else parts.push(`Откликов: ${deals.length}`);
+  if (far) parts.push(`дальше всех: ${PARTY_STAGES[far].title.toLowerCase()}`);
+  if (closed) parts.push(`закрыто сделок: ${closed}`);
+  return { ...base, deals: parts.join(", ") };
+}
+
 // Как совет убедился в личности при подтверждении участия. Сканы документов клуб не хранит.
 export const CHECK_METHODS = {
   passport_in_person: "Паспорт, лично",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dealRole, dealStatusMail, dealSteps, isCheckMethod, isDealStage, isOpenStage, stageOf } from "./deal";
+import { dealRole, dealStatusMail, dealSteps, lotStatus, isCheckMethod, isDealStage, isOpenStage, stageOf } from "./deal";
 
 describe("этапы сделки", () => {
   it("принимает только известные этапы", () => {
@@ -57,5 +57,20 @@ describe("письмо о статусе сделки", () => {
     const m = dealStatusMail({ role: "buyer", pseudonym: "К", title: "Монета", stage: "cancelled" }, "u");
     expect(m.text).toContain("Вы покупаете");
     expect(m.text).not.toContain("Ход сделки");
+  });
+});
+
+describe("статус своего лота", () => {
+  it("по статусу лота", () => {
+    expect(lotStatus({ status: "pending" }, []).label).toBe("На проверке у совета");
+    expect(lotStatus({ status: "active", quiet: true }, []).label).toBe("Тихий лот");
+    expect(lotStatus({ status: "active" }, []).deals).toBe("Откликов пока нет");
+    const r = lotStatus({ status: "rejected", rejectReason: "Фото" }, []);
+    expect(r.hint).toContain("Причина: Фото.");
+  });
+  it("отклики: число и самый продвинутый этап", () => {
+    const d = lotStatus({ status: "active" }, [{ status: "new" }, { status: "handled", stage: "contract" }, { status: "handled", stage: "cancelled" }]);
+    expect(d.deals).toBe("Откликов: 3, дальше всех: договор");
+    expect(lotStatus({ status: "active" }, [{ status: "handled", stage: "closed" }]).deals).toBe("Откликов: 1, закрыто сделок: 1");
   });
 });
