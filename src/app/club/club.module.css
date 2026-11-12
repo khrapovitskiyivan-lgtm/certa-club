@@ -379,3 +379,23 @@
 .expert .dealNow {
   font-size: 18px;
 }
+
+/* Блок «Экспертиза» на странице лота: кто проверит вещь. */
+.expertNote {
+  /* Сверху уже есть линия таблицы цены: своя только снизу. */
+  margin: 4px 0 28px;
+  padding: 0 0 20px;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+}
+
+.expertMini {
+  display: grid;
+  gap: 2px;
+}
+
+.expertName {
+  font-family: var(--font-serif), serif;
+  font-size: 20px;
+}

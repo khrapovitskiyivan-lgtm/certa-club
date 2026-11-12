@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displayName, validateExpert, yearsText } from "./expert";
+import { displayName, expertsForCategory, validateExpert, yearsText } from "./expert";
 
 const base = { fullName: "Иван Петрович Сидоров", nameMode: "initials", field: "watches", credentials: "Часовой мастер, 20 лет практики", experienceYears: "20" };
 
@@ -30,5 +30,19 @@ describe("профиль эксперта", () => {
   });
   it("стаж словами", () => {
     expect([1, 3, 11, 12, 15, 21, 22, 25].map(yearsText)).toEqual(["1 год", "3 года", "11 лет", "12 лет", "15 лет", "21 год", "22 года", "25 лет"]);
+  });
+});
+
+describe("эксперты у лота", () => {
+  const e = (field: string, published = true, consentAt: string | null = "2026-11-11") => ({ field, published, consentAt }) as never;
+  it("только опубликованные с согласием и по направлению категории", () => {
+    const list = [e("watches"), e("gems"), e("watches", false), e("watches", true, null)];
+    expect(expertsForCategory(list, "watches")).toHaveLength(1);
+    expect(expertsForCategory(list, "jewelry")).toHaveLength(1);
+    expect(expertsForCategory(list, "art")).toHaveLength(0);
+  });
+  it("основное направление первым", () => {
+    const r = expertsForCategory([e("icons"), e("art")], "art") as { field: string }[];
+    expect(r.map((x) => x.field)).toEqual(["art", "icons"]);
   });
 });

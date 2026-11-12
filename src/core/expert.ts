@@ -1,6 +1,7 @@
 // Эксперты клуба: профиль для вкладки «Эксперты». Публикуется только с письменного согласия эксперта.
 // Контактов в профиле нет: связь с экспертом только через куратора.
 import { z } from "zod";
+import type { Category } from "./listing";
 
 // Направления из презентации для экспертов; новое направление появляется вместе с новым экспертом.
 export const EXPERT_FIELDS = {
@@ -99,4 +100,20 @@ export function yearsText(n: number): string {
   const m100 = n % 100;
   const w = m10 === 1 && m100 !== 11 ? "год" : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? "года" : "лет";
   return `${n} ${w}`;
+}
+
+// Какие направления экспертов отвечают за категорию лота. Порядок: основное направление первым.
+const FIELDS_BY_CATEGORY: Record<Category, ExpertField[]> = {
+  watches: ["watches"],
+  jewelry: ["gems"],
+  art: ["art", "icons"],
+  collectibles: ["coins", "minerals", "other"],
+};
+
+// Эксперты, которых видно у лота: опубликованные с согласия, по направлениям категории, основное направление первым.
+export function expertsForCategory<E extends Pick<Expert, "field" | "published" | "consentAt">>(experts: E[], category: Category): E[] {
+  const fields = FIELDS_BY_CATEGORY[category];
+  return experts
+    .filter((e) => e.published && e.consentAt && fields.includes(e.field))
+    .sort((a, b) => fields.indexOf(a.field) - fields.indexOf(b.field));
 }

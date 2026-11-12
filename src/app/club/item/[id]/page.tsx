@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { CATEGORIES, formatAmount, visibleTo } from "@/core/listing";
+import { displayName, expertsForCategory, yearsText } from "@/core/expert";
 import { currentMember } from "@/server/auth";
 import { store } from "@/server/store";
 import { withdrawListing } from "../../actions";
@@ -38,6 +39,7 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
   const isCouncil = me.role === "council";
   if (!l || !visibleTo(l, me.id, isCouncil)) notFound();
   const mine = l.authorId === me.id;
+  const experts = expertsForCategory(await store.listExperts(), l.category);
   const isOffer = l.kind === "offer";
 
   return (
@@ -84,6 +86,30 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
           <dt>Размещено</dt>
           <dd>{fmt(l.createdAt)}</dd>
         </dl>
+
+        {/* Кто проверит вещь: эксперты клуба по направлению категории, без контактов. */}
+        <section className={c.expertNote}>
+          <p className={c.cardCat}>Экспертиза</p>
+          <p className={c.itemText}>
+            Перед сделкой вещь осматривает независимый эксперт и даёт письменное заключение о подлинности и состоянии. Эксперта на сделку назначает
+            куратор.
+          </p>
+          {experts.length > 0 ? (
+            experts.slice(0, 3).map((e) => (
+              <div key={e.id} className={c.expertMini}>
+                <span className={c.expertName}>{displayName(e)}</span>
+                <span className={c.cardMeta}>
+                  {[e.specialization || e.credentials, e.experienceYears !== undefined ? `стаж ${yearsText(e.experienceYears)}` : ""].filter(Boolean).join(" · ")}
+                </span>
+              </div>
+            ))
+          ) : (
+            <p className={c.cardMeta}>Профильного специалиста под эту вещь подберёт куратор.</p>
+          )}
+          <Link href="/club/experts" className={c.cardMeta} style={{ textDecoration: "underline" }}>
+            Все эксперты клуба
+          </Link>
+        </section>
 
         {(mine || isCouncil) && l.docs && l.docs.length > 0 && (
           <div>
