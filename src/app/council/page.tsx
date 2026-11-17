@@ -243,7 +243,9 @@ async function CouncilContent({ searchParams }: { searchParams: Promise<Record<s
                     <td>{m.pseudonym}</td>
                     <td>{m.fullName}</td>
                     <td>
+                      {/* key по роли: после сохранения список пересоздаётся с новым значением, иначе React 19 сбрасывает форму к старому. */}
                       <RoleSelect
+                        key={`${m.id}-${m.role ?? "member"}`}
                         id={m.id}
                         role={m.role ?? "member"}
                         locked={m.role === "council" && active.filter((x) => x.role === "council").length <= 1}
